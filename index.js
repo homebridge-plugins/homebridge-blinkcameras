@@ -1,5 +1,5 @@
 var request = require("request");
-var blink = require("node-blink-security");
+var Blink = require("node-blink-security");
 var Service, Characteristic;
 
 module.exports = function(homebridge) {
