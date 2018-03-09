@@ -1,20 +1,20 @@
 {
-  "name": "homebridge-blinkcameras",
-  "version": "0.0.1",
-  "description": "Blink Cameras plugin for homebridge: https://github.com/nfarina/homebridge",
-  "license": "ISC",
-  "keywords": [
-    "homebridge-plugin"
-  ],
-  "engines": {
-    "node": ">=0.12.0",
-    "homebridge": ">=0.2.0"
-  },
-  "repository": { 
-    "type": "git",
-    "url": "https://github.com/bartdorsey/homebridge-blinkcameras.git"
-  },
-  "dependencies": {
-    "node-blink-security": "^1.2.2"
-  }
+    "name": "homebridge-platform-blink-security",
+    "version": "0.1.0",
+    "description": "Blink Security Platform plugin for homebridge",
+    "license": "ISC",
+    "keywords": [
+        "homebridge-plugin"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/jasmas/homebridge-platform-blink-security.git"
+    },
+    "engines": {
+        "node": ">=6",
+        "homebridge": ">=0.4.29"
+    },
+    "dependencies": {
+        "node-blink-security": "^1.3.1"
+    }
 }

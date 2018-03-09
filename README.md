@@ -1,20 +1,24 @@
-# homebridge-blinkcameras
-Homebridge Plugin for Blink Cameras
+# homebridge-platform-blink-security
+Homebridge Platform Plugin for Blink Security Cameras, adapted from Homebridge Plugin for Blink Cameras project https://github.com/bartdorsey/homebridge-blinkcameras.
 
 This allows you to arm and disarm your Blink Home Security Cameras using Apple's HomeKit. This is a plugin for the excellent homebridge project https://github.com/nfarina/homebridge.  
 
 This is built on top of node-blink-security https://github.com/madshall/node-blink-security
 
-To configure this set it up as an accessory in your homebridge config.json file.
+To configure this set it up as a platform in your homebridge config.json file.
 
-    "accessories" : [
+    "platforms" : [
       {
-        "accessory": "BlinkCameras",
-        "name": "My Cameras",
+        "platform": "BlinkSecurity",
+        "name": "Blink System",
         "username" : "<your blink email address>",
-        "password" : "<your blink password"
+        "password" : "<your blink password",
+        "discovery": true    // optional: set to false to disable intermittent discovery
       }
     ]
 
-At some point I would like to figure out how to use the API to make this show up also as a HomeKit Camera. For now though it just arms/disarms the camera by pretending to be a HomeKit Switch.
+At some point I would like to figure out how to use the API to make this show up also as a HomeKit Camera. For now though it just adds a HomeKit Switch to arm/disarm the system and a HomeKit Switch for each camera to arm/disarm each individual camera motion sensor.
 
+The switch to arm/disarm the system will be given the name from the config. Each camera switch will be given the camera name. Multiple systems and cameras with duplicate names cannot be supported until node-blink-security is updated to support it.
+
+The plugin defaults to refreshing every 30 seconds to add or remove cameras from the system, which is useful for troubleshooting. Discovery can be set to false for less overhead, but will require a reload whenever cameras are added or removed from the Blink system.
