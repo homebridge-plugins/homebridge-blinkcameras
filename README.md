@@ -9,7 +9,7 @@ To configure this set it up as a platform in your homebridge config.json file.
 
     "platforms" : [
       {
-        "platform": "BlinkSecurity",
+        "platform": "BlinkSecurityPlatform",
         "name": "Blink System",
         "username" : "<your blink email address>",
         "password" : "<your blink password",
