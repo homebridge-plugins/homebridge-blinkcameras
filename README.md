@@ -22,3 +22,5 @@ At some point I would like to figure out how to use the API to make this show up
 The switch to arm/disarm the system will be given the name from the config. Each camera switch will be given the camera name. Multiple systems and cameras with duplicate names cannot be supported until node-blink-security is updated to support it.
 
 The plugin defaults to refreshing every 30 seconds to add or remove cameras from the system, which is useful for troubleshooting. Discovery can be set to false for less overhead, but will require a reload whenever cameras are added or removed from the Blink system.
+
+TODO: This platform currently doesn't work very well with scenes where more than one camera motion sensor is toggled at a time. A future update will attempt to add some timing and serialization to fix this.
