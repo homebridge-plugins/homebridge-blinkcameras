@@ -13,7 +13,10 @@
 // ]
 
 
+var BLINK_INTERVAL = 1500;
+
 var Blink = require('node-blink-security');
+var AsyncLock = require('node-async-locks').AsyncLock;
 var Accessory, Service, Characteristic, UUIDGen;
 
 module.exports = function(homebridge) {
@@ -27,12 +30,19 @@ module.exports = function(homebridge) {
     homebridge.registerPlatform("homebridge-platform-blink-security", "BlinkSecurityPlatform", BlinkSecurityPlatform, true);
 }
 
+function sleep(lock) {
+    lock.enter(function(token) {
+        return new Promise(resolve => setTimeout(resolve, 1000));
+    });
+}
+
 function BlinkSecurityPlatform(log, config, api) {
     log("BlinkSecurityPlatform Init");
     var platform = this;
     this.log = log;
     this.config = config;
     this.blink = new Blink(this.config.username, this.config.password);
+    this.lock = new AsyncLock();
     this.discoveredCameras = {};
     this.discovery = (this.config.discovery === undefined) ? true : this.config.discovery;
     this.accessories = {};
@@ -104,6 +114,7 @@ BlinkSecurityPlatform.prototype.addAccessory = function(cameraID) {
 BlinkSecurityPlatform.prototype.updateAccessory = function(accessory) {
     accessory.context.log = this.log;
     accessory.context.blink = this.blink;
+    accessory.context.lock = this.lock;
 
     if (accessory.context.cameraID === 0) {
 
@@ -159,126 +170,179 @@ BlinkSecurityPlatform.prototype.updateAccessory = function(accessory) {
     }
 }
 
-BlinkSecurityPlatform.prototype.getOn = function(callback) {
+BlinkSecurityPlatform.prototype.getOn = async function(callback) {
+    var accessory = this;
     if (this.context.cameraID === 0) {
-        this.context.blink.setupSystem()
-            .then(() => {
-                this.context.blink.isArmed()
-                    .then((response) => {
-                        callback(null, response);
-                    });
-            }, (error) => {
-                this.context.log(error);
-            });    
+        await this.context.lock.enter(function(token) {
+            accessory.context.blink.setupSystem()
+                .then(() => {
+                    accessory.context.blink.isArmed()
+                        .then((response) => {
+                            callback(null, response);
+                            new Promise(resolve => setTimeout(resolve, BLINK_INTERVAL))
+                                .then(() => {
+                                    accessory.context.lock.leave(token);
+                                });
+                        }, (error) => {
+                            accessory.context.log(error);
+                            accessory.context.lock.leave(token);
+                        });
+                }, (error) => {
+                    accessory.context.log(error);
+                    accessory.context.lock.leave(token);
+                });
+        });
     } else {
-        this.context.blink.setupSystem()
-            .then(() => {
-                this.context.blink.getCameras()
-                    .then((cameras) => {
-                        for (var name in cameras)  {
-                            if (cameras.hasOwnProperty(name)) {
-                                let camera = cameras[name];
-                                if (this.context.cameraID === camera.id) {
-                                    callback(null, camera.enabled);
-                                }
-                            }
-                        }
-                    });
-            }, (error) => {
-                this.context.log(error);
-            }); 
-    }
-}
-
-BlinkSecurityPlatform.prototype.setOn = function(action, callback) {
-    if (this.context.cameraID === 0) {
-        this.context.blink.setupSystem()
-            .then(() => {
-                this.context.blink.setArmed(action)
-                    .then(() => {
-                        callback(null, action);
-                    });
-            }, (error) => {
-                this.context.log(error);
-            });
-    } else {
-        this.context.blink.setupSystem()
-            .then(() => {
-                this.context.blink.getCameras()
+        await this.context.lock.enter(function(token) {
+            accessory.context.blink.setupSystem()
+                .then(() => {
+                    accessory.context.blink.getCameras()
                         .then((cameras) => {
                             for (var name in cameras)  {
                                 if (cameras.hasOwnProperty(name)) {
                                     let camera = cameras[name];
-                                    if (this.context.cameraID === camera.id) {
-                                        this.context.blink.getLinks();
-                                        camera.setMotionDetect(action)
-                                            .then(() => {
-                                                callback(null, action);
-                                            });
+                                    if (accessory.context.cameraID === camera.id) {
+                                        callback(null, camera.enabled);
                                     }
                                 }
                             }
+                            new Promise(resolve => setTimeout(resolve, BLINK_INTERVAL))
+                                .then(() => {
+                                    accessory.context.lock.leave(token);
+                                });
+                        }, (error) => {
+                            accessory.context.log(error);
+                            accessory.context.lock.leave(token);
                         });
-            }, (error) => {
-                this.context.log(error);
-            });
+                }, (error) => {
+                    accessory.context.log(error);
+                });
+        });
     }
 }
 
-BlinkSecurityPlatform.prototype.discover = function() {
-    this.blink.setupSystem()
-        .then(() => {
-            this.blink.getCameras()
-                .then((cameras) => {
-                    this.discoveredCameras = cameras;
+BlinkSecurityPlatform.prototype.setOn = async function(action, callback) {
+    var accessory = this;
+    if (this.context.cameraID === 0) {
+        await this.context.lock.enter(function(token) {
+            accessory.context.blink.setupSystem()
+                .then(() => {
+                    accessory.context.blink.setArmed(action)
+                        .then(() => {
+                            callback(null, action);
+                            new Promise(resolve => setTimeout(resolve, BLINK_INTERVAL))
+                                .then(() => {
+                                    accessory.context.lock.leave(token);
+                                });
+                        }, (error) => {
+                            accessory.context.log(error);
+                            accessory.context.lock.leave(token);
+                        });
+                }, (error) => {
+                    accessory.context.log(error);
+                    accessory.context.lock.leave(token);
+                });
+        });
+    } else {
+        await this.context.lock.enter(function(token) {
+            accessory.context.blink.setupSystem()
+                .then(() => {
+                    accessory.context.blink.getCameras()
+                            .then((cameras) => {
+                                for (var name in cameras)  {
+                                    if (cameras.hasOwnProperty(name)) {
+                                        let camera = cameras[name];
+                                        if (accessory.context.cameraID === camera.id) {
+                                            accessory.context.blink.getLinks();
+                                            camera.setMotionDetect(action)
+                                                .then(() => {
+                                                    callback(null, action);
+                                                    new Promise(resolve => setTimeout(resolve, BLINK_INTERVAL))
+                                                        .then(() => {
+                                                            accessory.context.lock.leave(token);
+                                                        });
+                                                }, (error) => {
+                                                    accessory.context.log(error);
+                                                    accessory.context.lock.leave(token);
+                                                });
+                                        }
+                                    }
+                                }
+                            }, (error) => {
+                                accessory.context.log(error);
+                                accessory.context.lock.leave(token);
+                            });
+                }, (error) => {
+                    accessory.context.log(error);
+                    accessory.context.lock.leave(token);
+                });
+        });
+    }
+}
 
-                    // Mark seen cameras as visible
-                    for (var cachedAccessory in this.accessories) {
-                        if (this.accessories.hasOwnProperty(cachedAccessory)) {
-                            let thisCachedAccessory = this.accessories[cachedAccessory];
-                            thisCachedAccessory.reachable = (thisCachedAccessory.context.cameraID === 0) ? true : false;
-                            for (var testCamera in cameras) {
-                                if (cameras.hasOwnProperty(testCamera)) {
-                                    let thisTestCamera = cameras[testCamera];
-                                    if (thisTestCamera.id === thisCachedAccessory.context.cameraID) {
-                                        thisCachedAccessory.reachable = true;
-                                        if (thisCachedAccessory.context.initialized === false) {
-                                            this.updateAccessory(thisCachedAccessory);
+BlinkSecurityPlatform.prototype.discover = async function() {
+    var platform = this;
+    await this.lock.enter(function(token) {
+        platform.blink.setupSystem()
+            .then(() => {
+                platform.blink.getCameras()
+                    .then((cameras) => {
+                        platform.discoveredCameras = cameras;
+
+                        // Mark seen cameras as visible
+                        for (var cachedAccessory in platform.accessories) {
+                            if (platform.accessories.hasOwnProperty(cachedAccessory)) {
+                                let thisCachedAccessory = platform.accessories[cachedAccessory];
+                                thisCachedAccessory.reachable = (thisCachedAccessory.context.cameraID === 0) ? true : false;
+                                for (var testCamera in cameras) {
+                                    if (cameras.hasOwnProperty(testCamera)) {
+                                        let thisTestCamera = cameras[testCamera];
+                                        if (thisTestCamera.id === thisCachedAccessory.context.cameraID) {
+                                            thisCachedAccessory.reachable = true;
+                                            if (thisCachedAccessory.context.initialized === false) {
+                                                platform.updateAccessory(thisCachedAccessory);
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
-                    }
 
-                    // remove accessories no longer visible
-                    var reachableAccessories = {};
-                    for (var accessory in this.accessories) {
-                        let thisAccessory = this.accessories[accessory];
-                        if (thisAccessory.reachable === true) {
-                            reachableAccessories[thisAccessory.UUID] = thisAccessory;
-                        } else {
-                            this.log("Unreachable Camera Switch: " + thisAccessory.context.cameraID + ' ' + thisAccessory.displayName);
-                            this.log('Unregister accessory ' + thisAccessory.UUID);
-                            this.api.unregisterPlatformAccessories("homebridge-platform-blink-security", "BlinkSecurityPlatform", [thisAccessory]);
+                        // remove accessories no longer visible
+                        var reachableAccessories = {};
+                        for (var accessory in platform.accessories) {
+                            let thisAccessory = platform.accessories[accessory];
+                            if (thisAccessory.reachable === true) {
+                                reachableAccessories[thisAccessory.UUID] = thisAccessory;
+                            } else {
+                                platform.log("Unreachable Camera Switch: " + thisAccessory.context.cameraID + ' ' + thisAccessory.displayName);
+                                platform.log('Unregister accessory ' + thisAccessory.UUID);
+                                platform.api.unregisterPlatformAccessories("homebridge-platform-blink-security", "BlinkSecurityPlatform", [thisAccessory]);
+                            }
                         }
-                    }
-                    this.accessories = reachableAccessories;
-                    
-                    // add network arm/disarm switch if not yet added
-                    this.addAccessory();
+                        platform.accessories = reachableAccessories;
+                        
+                        // add network arm/disarm switch if not yet added
+                        platform.addAccessory();
 
-                    // add visible cameras if not yet added
-                    for (var name in cameras)  {
-                        if (cameras.hasOwnProperty(name)) {
-                            let camera = cameras[name];
-                            this.addAccessory(camera.id);
+                        // add visible cameras if not yet added
+                        for (var name in cameras)  {
+                            if (cameras.hasOwnProperty(name)) {
+                                let camera = cameras[name];
+                                platform.addAccessory(camera.id);
+                            }
                         }
-                    }
-
-                   
-                });
-        }, (error) => {
-            this.log(error);
-        });
+                        new Promise(resolve => setTimeout(resolve, BLINK_INTERVAL))
+                            .then(() => {
+                                platform.lock.leave(token);
+                            });
+                    }, (error) => {
+                        platform.log(error);
+                        platform.lock.leave(token);
+                    });
+            }, (error) => {
+                platform.log(error);
+                platform.lock.leave(token);
+            });
+    });
 }
