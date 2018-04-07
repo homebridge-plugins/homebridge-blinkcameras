@@ -171,10 +171,7 @@ BlinkSecurityPlatform.prototype.getOn = async function(callback) {
                     accessory.context.blink.isArmed()
                         .then((response) => {
                             callback(null, response);
-                            new Promise(resolve => setTimeout(resolve, 100))
-                                .then(() => {
-                                    accessory.context.lock.leave(token);
-                                });
+                            accessory.context.lock.leave(token);
                         }, (error) => {
                             accessory.context.log(error);
                             accessory.context.lock.leave(token);
@@ -198,10 +195,7 @@ BlinkSecurityPlatform.prototype.getOn = async function(callback) {
                                     }
                                 }
                             }
-                            new Promise(resolve => setTimeout(resolve, 100))
-                                .then(() => {
-                                    accessory.context.lock.leave(token);
-                                });
+                            accessory.context.lock.leave(token);
                         }, (error) => {
                             accessory.context.log(error);
                             accessory.context.lock.leave(token);
