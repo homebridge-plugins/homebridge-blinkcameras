@@ -13,8 +13,6 @@
 // ]
 
 
-var BLINK_INTERVAL = 1500;
-
 var Blink = require('node-blink-security');
 var AsyncLock = require('node-async-locks').AsyncLock;
 var Accessory, Service, Characteristic, UUIDGen;
@@ -28,12 +26,6 @@ module.exports = function(homebridge) {
     UUIDGen = homebridge.hap.uuid;
     
     homebridge.registerPlatform("homebridge-platform-blink-security", "BlinkSecurityPlatform", BlinkSecurityPlatform, true);
-}
-
-function sleep(lock) {
-    lock.enter(function(token) {
-        return new Promise(resolve => setTimeout(resolve, 1000));
-    });
 }
 
 function BlinkSecurityPlatform(log, config, api) {
@@ -179,7 +171,7 @@ BlinkSecurityPlatform.prototype.getOn = async function(callback) {
                     accessory.context.blink.isArmed()
                         .then((response) => {
                             callback(null, response);
-                            new Promise(resolve => setTimeout(resolve, BLINK_INTERVAL))
+                            new Promise(resolve => setTimeout(resolve, 100))
                                 .then(() => {
                                     accessory.context.lock.leave(token);
                                 });
@@ -206,7 +198,7 @@ BlinkSecurityPlatform.prototype.getOn = async function(callback) {
                                     }
                                 }
                             }
-                            new Promise(resolve => setTimeout(resolve, BLINK_INTERVAL))
+                            new Promise(resolve => setTimeout(resolve, 100))
                                 .then(() => {
                                     accessory.context.lock.leave(token);
                                 });
@@ -230,7 +222,7 @@ BlinkSecurityPlatform.prototype.setOn = async function(action, callback) {
                     accessory.context.blink.setArmed(action)
                         .then(() => {
                             callback(null, action);
-                            new Promise(resolve => setTimeout(resolve, BLINK_INTERVAL))
+                            new Promise(resolve => setTimeout(resolve, 1500))
                                 .then(() => {
                                     accessory.context.lock.leave(token);
                                 });
@@ -257,7 +249,7 @@ BlinkSecurityPlatform.prototype.setOn = async function(action, callback) {
                                             camera.setMotionDetect(action)
                                                 .then(() => {
                                                     callback(null, action);
-                                                    new Promise(resolve => setTimeout(resolve, BLINK_INTERVAL))
+                                                    new Promise(resolve => setTimeout(resolve, 1500))
                                                         .then(() => {
                                                             accessory.context.lock.leave(token);
                                                         });
@@ -332,7 +324,7 @@ BlinkSecurityPlatform.prototype.discover = async function() {
                                 platform.addAccessory(camera.id);
                             }
                         }
-                        new Promise(resolve => setTimeout(resolve, BLINK_INTERVAL))
+                        new Promise(resolve => setTimeout(resolve, 1500))
                             .then(() => {
                                 platform.lock.leave(token);
                             });
