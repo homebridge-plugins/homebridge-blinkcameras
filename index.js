@@ -202,6 +202,7 @@ BlinkSecurityPlatform.prototype.getOn = async function(callback) {
                         });
                 }, (error) => {
                     accessory.context.log(error);
+                    accessory.context.lock.leave(token);
                 });
         });
     }
