@@ -165,46 +165,36 @@ BlinkSecurityPlatform.prototype.updateAccessory = function(accessory) {
 BlinkSecurityPlatform.prototype.getOn = async function(callback) {
     var accessory = this;
     if (this.context.cameraID === 0) {
-        await this.context.lock.enter(function(token) {
-            accessory.context.blink.setupSystem()
-                .then(() => {
-                    accessory.context.blink.isArmed()
-                        .then((response) => {
-                            callback(null, response);
-                            accessory.context.lock.leave(token);
-                        }, (error) => {
-                            accessory.context.log(error);
-                            accessory.context.lock.leave(token);
-                        });
-                }, (error) => {
-                    accessory.context.log(error);
-                    accessory.context.lock.leave(token);
-                });
-        });
+        accessory.context.blink.setupSystem()
+            .then(() => {
+                accessory.context.blink.isArmed()
+                    .then((response) => {
+                        callback(null, response);
+                    }, (error) => {
+                        accessory.context.log(error);
+                    });
+            }, (error) => {
+                accessory.context.log(error);
+            });
     } else {
-        await this.context.lock.enter(function(token) {
-            accessory.context.blink.setupSystem()
-                .then(() => {
-                    accessory.context.blink.getCameras()
-                        .then((cameras) => {
-                            for (var name in cameras)  {
-                                if (cameras.hasOwnProperty(name)) {
-                                    let camera = cameras[name];
-                                    if (accessory.context.cameraID === camera.id) {
-                                        callback(null, camera.enabled);
-                                    }
+        accessory.context.blink.setupSystem()
+            .then(() => {
+                accessory.context.blink.getCameras()
+                    .then((cameras) => {
+                        for (var name in cameras)  {
+                            if (cameras.hasOwnProperty(name)) {
+                                let camera = cameras[name];
+                                if (accessory.context.cameraID === camera.id) {
+                                    callback(null, camera.enabled);
                                 }
                             }
-                            accessory.context.lock.leave(token);
-                        }, (error) => {
-                            accessory.context.log(error);
-                            accessory.context.lock.leave(token);
-                        });
-                }, (error) => {
-                    accessory.context.log(error);
-                    accessory.context.lock.leave(token);
-                });
-        });
+                        }
+                    }, (error) => {
+                        accessory.context.log(error);
+                    });
+            }, (error) => {
+                accessory.context.log(error);
+            });
     }
 }
 
