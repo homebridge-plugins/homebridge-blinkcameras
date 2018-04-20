@@ -170,10 +170,12 @@ BlinkSecurityPlatform.prototype.getOn = async function(callback) {
                 accessory.context.blink.isArmed()
                     .then((response) => {
                         callback(null, response);
-                    }, (error) => {
+                    })
+                    .catch((error) => {
                         accessory.context.log(error);
                     });
-            }, (error) => {
+            })
+            .catch((error) => {
                 accessory.context.log(error);
             });
     } else {
@@ -189,10 +191,12 @@ BlinkSecurityPlatform.prototype.getOn = async function(callback) {
                                 }
                             }
                         }
-                    }, (error) => {
+                    })
+                    .catch((error) => {
                         accessory.context.log(error);
                     });
-            }, (error) => {
+            })
+            .catch((error) => {
                 accessory.context.log(error);
             });
     }
@@ -210,12 +214,18 @@ BlinkSecurityPlatform.prototype.setOn = async function(action, callback) {
                             new Promise(resolve => setTimeout(resolve, 1500))
                                 .then(() => {
                                     accessory.context.lock.leave(token);
+                                })
+                                .catch((error) => {
+                                    accessory.context.log(error);
+                                    accessory.context.lock.leave(token);
                                 });
-                        }, (error) => {
+                        })
+                        .catch((error) => {
                             accessory.context.log(error);
                             accessory.context.lock.leave(token);
                         });
-                }, (error) => {
+                })
+                .catch((error) => {
                     accessory.context.log(error);
                     accessory.context.lock.leave(token);
                 });
@@ -237,19 +247,26 @@ BlinkSecurityPlatform.prototype.setOn = async function(action, callback) {
                                                     new Promise(resolve => setTimeout(resolve, 1500))
                                                         .then(() => {
                                                             accessory.context.lock.leave(token);
+                                                        })
+                                                        .catch((error) => {
+                                                            accessory.context.log(error);
+                                                            accessory.context.lock.leave(token);
                                                         });
-                                                }, (error) => {
+                                                })
+                                                .catch((error) => {
                                                     accessory.context.log(error);
                                                     accessory.context.lock.leave(token);
                                                 });
                                         }
                                     }
                                 }
-                            }, (error) => {
+                            })
+                            .catch((error) => {
                                 accessory.context.log(error);
                                 accessory.context.lock.leave(token);
                             });
-                }, (error) => {
+                })
+                .catch((error) => {
                     accessory.context.log(error);
                     accessory.context.lock.leave(token);
                 });
@@ -312,12 +329,18 @@ BlinkSecurityPlatform.prototype.discover = async function() {
                         new Promise(resolve => setTimeout(resolve, 1500))
                             .then(() => {
                                 platform.lock.leave(token);
+                            })
+                            .catch((error) => {
+                                platform.log(error);
+                                platform.lock.leave(token);
                             });
-                    }, (error) => {
+                    })
+                    .catch((error) => {
                         platform.log(error);
                         platform.lock.leave(token);
                     });
-            }, (error) => {
+            })
+            .catch((error) => {
                 platform.log(error);
                 platform.lock.leave(token);
             });
