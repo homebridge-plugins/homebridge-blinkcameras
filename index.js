@@ -59,6 +59,10 @@ function BlinkSecurityPlatform(log, config, api) {
     }
 }
 
+BlinkSecurityPlatform.prototype.getBlink = function() {
+    return new Blink(this.config.username, this.config.password);
+}
+
 BlinkSecurityPlatform.prototype.configureAccessory = function(accessory) {
     if (accessory.context.cameraID === 0) {
         accessory.reachable = true;
@@ -105,7 +109,7 @@ BlinkSecurityPlatform.prototype.addAccessory = function(cameraID) {
 
 BlinkSecurityPlatform.prototype.updateAccessory = function(accessory) {
     accessory.context.log = this.log;
-    accessory.context.blink = this.blink;
+    accessory.context.getBlink = this.getBlink.bind(this);
     accessory.context.lock = this.lock;
 
     if (accessory.context.cameraID === 0) {
@@ -155,6 +159,7 @@ BlinkSecurityPlatform.prototype.updateAccessory = function(accessory) {
                             .on('set', this.setOn.bind(accessory));
                     }
                     this.log("Initialized Camera Switch: " + camera.id + ' ' + camera.name);
+                    
                     accessory.context.initialized = true;
                 }
             }
@@ -164,10 +169,11 @@ BlinkSecurityPlatform.prototype.updateAccessory = function(accessory) {
 
 BlinkSecurityPlatform.prototype.getOn = async function(callback) {
     var accessory = this;
+    var blink = accessory.context.getBlink();
     if (this.context.cameraID === 0) {
-        accessory.context.blink.setupSystem()
+        blink.setupSystem()
             .then(() => {
-                accessory.context.blink.isArmed()
+                blink.isArmed()
                     .then((response) => {
                         callback(null, response);
                     })
@@ -179,9 +185,9 @@ BlinkSecurityPlatform.prototype.getOn = async function(callback) {
                 accessory.context.log(error);
             });
     } else {
-        accessory.context.blink.setupSystem()
+        blink.setupSystem()
             .then(() => {
-                accessory.context.blink.getCameras()
+                blink.getCameras()
                     .then((cameras) => {
                         for (var name in cameras)  {
                             if (cameras.hasOwnProperty(name)) {
@@ -204,11 +210,12 @@ BlinkSecurityPlatform.prototype.getOn = async function(callback) {
 
 BlinkSecurityPlatform.prototype.setOn = async function(action, callback) {
     var accessory = this;
+    var blink = accessory.context.getBlink();
     if (this.context.cameraID === 0) {
         await this.context.lock.enter(function(token) {
-            accessory.context.blink.setupSystem()
+            blink.setupSystem()
                 .then(() => {
-                    accessory.context.blink.setArmed(action)
+                    blink.setArmed(action)
                         .then(() => {
                             callback(null, action);
                             new Promise(resolve => setTimeout(resolve, 1500))
@@ -232,15 +239,15 @@ BlinkSecurityPlatform.prototype.setOn = async function(action, callback) {
         });
     } else {
         await this.context.lock.enter(function(token) {
-            accessory.context.blink.setupSystem()
+            blink.setupSystem()
                 .then(() => {
-                    accessory.context.blink.getCameras()
+                    blink.getCameras()
                             .then((cameras) => {
                                 for (var name in cameras)  {
                                     if (cameras.hasOwnProperty(name)) {
                                         let camera = cameras[name];
                                         if (accessory.context.cameraID === camera.id) {
-                                            accessory.context.blink.getLinks();
+                                            blink.getLinks();
                                             camera.setMotionDetect(action)
                                                 .then(() => {
                                                     callback(null, action);
@@ -276,10 +283,11 @@ BlinkSecurityPlatform.prototype.setOn = async function(action, callback) {
 
 BlinkSecurityPlatform.prototype.discover = async function() {
     var platform = this;
+    var blink = platform.getBlink();
     await this.lock.enter(function(token) {
-        platform.blink.setupSystem()
+        blink.setupSystem()
             .then(() => {
-                platform.blink.getCameras()
+                blink.getCameras()
                     .then((cameras) => {
                         platform.discoveredCameras = cameras;
 
