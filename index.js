@@ -60,7 +60,13 @@ function BlinkSecurityPlatform(log, config, api) {
 }
 
 BlinkSecurityPlatform.prototype.getBlink = function() {
-    return new Blink(this.config.username, this.config.password);
+    if ((this._blinkts === undefined) || ((new Date() - this._blinkts) > 86340000)) {
+        this._blinkts = new Date();
+        this._blink = new Blink(this.config.username, this.config.password);
+        return this._blink;
+    } else {
+        return this._blink;
+    }
 }
 
 BlinkSecurityPlatform.prototype.configureAccessory = function(accessory) {
