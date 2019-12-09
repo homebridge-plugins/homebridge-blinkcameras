@@ -231,11 +231,13 @@ class BlinkSecurityPlatform {
             }
         } else {
             try {
-                Object.entries(blink.cameras).forEach(([id, camera]) => {
-                    if (accessory.context.id === id) {
-                        callback(null, camera.enabled);
-                    }
-                })
+                if (blink.cameras) {
+                    Object.entries(blink.cameras).forEach(([id, camera]) => {
+                        if (accessory.context.id === id) {
+                            callback(null, camera.enabled);
+                        }
+                    })
+                }
             } catch (error) {
                 this.log(error);
             }
@@ -355,14 +357,18 @@ class BlinkSecurityPlatform {
                 this.removeCamerasNoLongerVisible();
 
                 // Add networks as switches
-                blink.networks.forEach((network) => {
-                    this.addNetwork(network);
-                });
+                if (blink.networks && blink.networks.length) {
+                    blink.networks.forEach((network) => {
+                        this.addNetwork(network);
+                    });
+                }
 
                 // Add cameras as switches
-                Object.entries(blink.cameras).forEach(([id, camera]) => {
-                    this.addCamera(camera);
-                })
+                if (blink.cameras) {
+                    Object.entries(blink.cameras).forEach(([id, camera]) => {
+                        this.addCamera(camera);
+                    })
+                }
 
                 await this.sleep(1500);
             } catch (error) {
