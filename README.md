@@ -1,3 +1,6 @@
+
+## NOTE: this project is being refactored. I don't have a time frame on when it will be ready, but for now it's broken and does not currently work. 
+
 # homebridge-platform-blink-security
 Homebridge Platform Plugin for Blink Security Cameras, adapted from Homebridge Plugin for Blink Cameras project https://github.com/bartdorsey/homebridge-blinkcameras.
 
