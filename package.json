@@ -38,7 +38,7 @@
   "scripts": {
     "dev": "rollup -c -w",
     "build": "rollup -c",
-    "test": "jest --coverage",
+    "test": "jest",
     "prepublishOnly": "npm run build"
   }
 }
