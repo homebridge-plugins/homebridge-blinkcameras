@@ -3,33 +3,36 @@ jest.mock('node-blink-security');
 jest.mock('async-lock');
 const Blink = require('node-blink-security');
 const AsyncLock = require('async-lock');
+const faker = require('faker');
 
 let BlinkSecurityPlatform;
 
-const mockHomeBridge = {
-    version: "1.0",
-    hap: {
-        Service: {
-            AccessoryInformation: '',
-            Switch: ''
+const mockHomeBridge = () => {
+    return {
+        version: "1.0",
+        hap: {
+            Service: {
+                AccessoryInformation: 'AccessoryInformation',
+                Switch: 'Switch'
+            },
+            Characteristic: {
+                Name: '',
+                Manufacturer: '',
+                SerialNumber: '',
+                On: ''
+            },
+            uuid: {
+                generate: jest.fn((string) => { return string })
+            }
         },
-        Characteristic: {
-            Name: '',
-            Manufacturer: '',
-            SerialNumber: '',
-            On: ''
-        },
-        uuid: {
-            generate: jest.fn((string) => { return string })
+        platformAccessory: jest.fn().mockImplementation((network, uuid) => { return mockAccessory(uuid) }),
+        registerPlatform: (name, className, platform) => {
+            BlinkSecurityPlatform = platform;
         }
-    },
-    platformAccessory: jest.fn().mockImplementation(() => { return mockAccessory }),
-    registerPlatform: (name, className, platform) => {
-        BlinkSecurityPlatform = platform;
-    }
+    };
 }
 
-const mockLog = jest.fn();
+const mockLog = jest.fn().mockImplementation(console.log);
 
 const mockConfig = {
     name: 'MyNetwork',
@@ -38,12 +41,13 @@ const mockConfig = {
     discovery: false
 }
 
-const mockApi = {
-    on: jest.fn(() => {}),
-    registerPlatformAccessories: jest.fn(() => {})
+const mockApi = () => {
+    return {
+        on: jest.fn(() => {}),
+        registerPlatformAccessories: jest.fn(() => {}),
+        unregisterPlatformAccessories: jest.fn(() => {})
+    }
 };
-
-let platform;
 
 const mockCharacteristic = {
     on: jest.fn().mockImplementation((action, callback) => {
@@ -59,28 +63,65 @@ const mockService = {
     setCharacteristic: jest.fn(() => {
         return mockService;
     })
-}
-
-const mockAccessory = {
-    displayName: 'Mock Accessory',
-    context: {
-        id: '1',
-        camera: {
-            enabled: true
-        }
-    },
-    getService: jest.fn((arg) => {
-        return mockService;
-    })
 };
 
+const mockAccessory = (uuid = faker.random.uuid()) => {
+    return {
+        displayName: 'Mock Accessory',
+        UUID: uuid,
+        context: {},
+        getService: jest.fn((arg) => {
+            return mockService;
+        }),
+        addService: jest.fn(() => {
+            return mockService;
+        })
+    };
+};
+
+const mockCameraAccessory = (uuid, id, reachable = true) => {
+    return {
+        ...mockAccessory(uuid),
+        context: {
+            id,
+            isCamera: true
+        },
+        reachable
+    }
+};
+
+const mockNetworkAccessory = (uuid, id) => {
+    return {
+        ...mockAccessory(uuid),
+        context: {
+            id,
+            isNetwork: true
+        }
+    }
+};
+
+const mockBlinkCamera = (id) => {
+    return {
+        name: `Camera ${id}`,
+        id,
+        enabled: true,
+        setMotionDetect: jest.fn(() => {})
+    };
+};
+
+let platform;
+let bridge;
+
 beforeEach(() => {
-    plugin(mockHomeBridge);
-    platform = new BlinkSecurityPlatform(mockLog, mockConfig, mockApi);
+    bridge = plugin(mockHomeBridge());
+    platform = new BlinkSecurityPlatform(mockLog, mockConfig, mockApi());
     platform.sleep = jest.fn(() => {});
     platform.lock.acquire = jest.fn(async (id, callback) => {
         await callback('token');
     });
+    platform.getBlink();
+    platform._blink.cameras = {};
+    platform.accessories = {};
 });
 
 
@@ -93,8 +134,6 @@ describe('getBlink', () => {
 
 describe('discover', () => {
     it('should add cameras', async() => {
-        platform._blink = undefined;
-        platform.getBlink();
         platform._blink.cameras = {
             '1': {
                 enabled: true
@@ -115,8 +154,6 @@ describe('discover', () => {
     });
 
     it('should add networks', async() => {
-        platform._blink = undefined;
-        platform.getBlink();
         platform._blink.networks = [{
 
         }];
@@ -135,78 +172,93 @@ describe('discover', () => {
 
 describe('addCamera', () => {
     it('should add a new Camera', () => {
-        platform.addCamera({
-            id: '1',
+        const uuid = faker.random.uuid();
+        const id = faker.random.uuid();
+        platform.addCamera(uuid, {
+            id,
             name: 'MyCamera'
         });
-        expect(mockHomeBridge.hap.uuid.generate.mock.calls.length).toBe(1);
-        expect(mockAccessory.context.isCamera).toBe(true);
-        expect(mockAccessory.context.id).toBe('1');
-        expect(mockHomeBridge.hap.uuid.generate.mock.calls[0][0]).toBe(`homebridge-platform-blink-security-${mockConfig.name}-1`);
-        expect(mockHomeBridge.platformAccessory.mock.calls.length).toBe(1);
-        expect(mockApi.registerPlatformAccessories.mock.calls.length).toBe(1);
-        expect(mockApi.registerPlatformAccessories.mock.calls[0][2]).toStrictEqual([mockAccessory]);
+        expect(platform.accessories[uuid].context.isCamera).toBe(true);
+        expect(platform.accessories[uuid].context.id).toBe(id);
+        expect(bridge.platformAccessory.mock.calls.length).toBe(1);
+        expect(platform.api.registerPlatformAccessories.mock.calls.length).toBe(1);
+        expect(platform.api.registerPlatformAccessories.mock.calls[0][2]).toStrictEqual([platform.accessories[uuid]]);
     });
 });
 
 describe('addNetwork', () => {
     it('should add a new network', () => {
-        platform.addNetwork({
-            id: '1',
+        const uuid = faker.random.uuid();
+        const id = faker.random.uuid();
+        platform.addNetwork(uuid, {
+            id,
             name: 'MyNetwork'
-        });
-        expect(mockHomeBridge.hap.uuid.generate.mock.calls.length).toBe(1);
-        expect(mockHomeBridge.hap.uuid.generate.mock.calls[0][0]).toBe(`homebridge-platform-blink-security-${mockConfig.name}-1`);
-        expect(mockAccessory.context.isCamera).toBe(true);
-        expect(mockAccessory.context.id).toBe('1');
-        expect(mockHomeBridge.platformAccessory.mock.calls.length).toBe(1);
-        expect(mockApi.registerPlatformAccessories.mock.calls.length).toBe(1);
-        expect(mockApi.registerPlatformAccessories.mock.calls[0][2]).toStrictEqual([mockAccessory]);
-    });
-});
-
-describe('configureAccessory', () => {
-    it('should set the accessory to be reachable', () => {
-        platform.configureAccessory(mockAccessory)
-        expect(mockAccessory.reachable).toBe(true);
+        });;
+        expect(platform.accessories[uuid].context.isNetwork).toBe(true);
+        expect(platform.accessories[uuid].context.id).toBe(id);
+        expect(bridge.platformAccessory.mock.calls.length).toBe(1);
+        expect(platform.api.registerPlatformAccessories.mock.calls.length).toBe(1);
+        expect(platform.api.registerPlatformAccessories.mock.calls[0][2]).toStrictEqual([platform.accessories[uuid]]);
     });
 });
 
 describe('updateAccessory', () => {
     it('should update the accessory', () => {
-        platform.updateAccessory(mockAccessory);
-        expect(mockAccessory.getService.mock.calls.length).toBe(3);
-        expect(mockService.setCharacteristic.mock.calls[0][1]).toBe(mockAccessory.displayName);
+        const accessory = mockAccessory();
+        platform.updateAccessory(accessory);
+        expect(accessory.getService.mock.calls.length).toBe(2);
+        expect(mockService.setCharacteristic.mock.calls[0][1]).toBe(accessory.displayName);
         expect(mockService.setCharacteristic.mock.calls[1][1]).toBe('blink');
-        expect(mockService.setCharacteristic.mock.calls[2][1]).toBe(mockAccessory.context.id);
+        expect(mockService.setCharacteristic.mock.calls[2][1]).toBe(accessory.context.id);
         expect(mockService.getCharacteristic.mock.calls.length).toBe(1);
         expect(mockService.setCharacteristic.mock.calls.length).toBe(3);
-        expect(mockAccessory.context.initialized).toBe(true);
+        expect(accessory.context.initialized).toBe(true);
         expect(mockCharacteristic.on.mock.calls.length).toBe(2);
     });
+
+    it('should add the service when the service does not exist', () => {
+        const accessory = mockAccessory();
+        accessory.getService = jest.fn().mockImplementation((type) => {
+            console.log(`Type = ${type}`);
+            if (type === 'AccessoryInformation') {
+                return mockService;
+            }
+            if (type === 'Switch') {
+                return false;
+            }
+        });
+        platform.updateAccessory(accessory);
+        expect(accessory.getService.mock.calls.length).toBe(2);
+        expect(accessory.addService.mock.calls.length).toBe(1);
+        expect(mockService.setCharacteristic.mock.calls[0][1]).toBe(accessory.displayName);
+        expect(mockService.setCharacteristic.mock.calls[1][1]).toBe('blink');
+        expect(mockService.setCharacteristic.mock.calls[2][1]).toBe(accessory.context.id);
+        expect(mockService.getCharacteristic.mock.calls.length).toBe(1);
+        expect(mockService.setCharacteristic.mock.calls.length).toBe(3);
+        expect(accessory.context.initialized).toBe(true);
+        expect(mockCharacteristic.on.mock.calls.length).toBe(2);
+    })
 });
 
 describe('getOn', () => {
     it('should call the callback when the accessory is a network', async () => {
+        const uuid = faker.random.uuid();
+        const id = faker.random.uuid();
+        accessory = mockNetworkAccessory(uuid, id);
         const mockCallback = jest.fn(() => { });
-        mockAccessory.context.isNetwork = true;
-        await platform.getOn(mockAccessory, 'get', mockCallback);
+        await platform.getOn(accessory, 'get', mockCallback);
         expect(platform._blink.isArmed.mock.calls.length).toBe(1);
         expect(mockCallback.mock.calls[0][0]).toBe(null);
         expect(mockCallback.mock.calls.length).toBe(1);
     });
 
     it('should call the callback when the accessory is a camera', async () => {
-        platform.getBlink();
-        platform._blink.cameras = {
-            '1': {
-                enabled: true
-            }
-        };
+        const uuid = faker.random.uuid();
+        const id = faker.random.uuid();
+        const accessory = mockCameraAccessory(uuid, id);
         const mockCallback = jest.fn(() => { });
-        mockAccessory.context.isNetwork = false;
-        mockAccessory.context.id = '1';
-        await platform.getOn(mockAccessory, 'get', mockCallback);
+        platform._blink.cameras[id] = mockBlinkCamera(id);
+        await platform.getOn(accessory, 'get', mockCallback);
         expect(mockCallback.mock.calls.length).toBe(1);
         expect(mockCallback.mock.calls[0][0]).toBe(null);
         expect(mockCallback.mock.calls[0][1]).toBe(true);
@@ -216,9 +268,11 @@ describe('getOn', () => {
 
 describe('setOn', () => {
     it('should call the callback when the accessory is a network', async () => {
-        mockAccessory.context.isNetwork = true;
+        const uuid = faker.random.uuid();
+        const id = faker.random.uuid();
+        const accessory = mockNetworkAccessory(uuid, id);
         const mockCallback = jest.fn(() => { });
-        await platform.setOn(mockAccessory, 'set', mockCallback);
+        await platform.setOn(accessory, 'set', mockCallback);
         expect(platform._blink.setArmed.mock.calls.length).toBe(1);
         expect(mockCallback.mock.calls.length).toBe(1);
         expect(mockCallback.mock.calls[0][0]).toBe(null);
@@ -227,21 +281,18 @@ describe('setOn', () => {
     });
 
     it('should call the callback when the accessory is camera', async () => {
-        platform.getBlink();
-        mockAccessory.context.isNetwork = true;
+        const uuid = faker.random.uuid();
+        const id = faker.random.uuid();
+        const accessory = mockCameraAccessory(uuid, id);
         const mockCallback = jest.fn(() => { });
-        mockAccessory.context.isNetwork = false;
-        mockAccessory.context.id = '1';
-        const mockCamera = {
-            id: '1',
-            setMotionDetect: jest.fn(() => { })
-        };
+        const mockCamera = mockBlinkCamera(id);
         platform._blink.getCameras.mockImplementation(() => {
             return {
                 'MyCamera': mockCamera
             };
         });
-        await platform.setOn(mockAccessory, 'set', mockCallback);
+        platform._blink.cameras[id] = mockCamera;
+        await platform.setOn(accessory, 'set', mockCallback);
         expect(platform._blink.getCameras.mock.calls.length).toBe(1);
         expect(platform._blink.getLinks.mock.calls.length).toBe(1);
         expect(mockCamera.setMotionDetect.mock.calls.length).toBe(1);
@@ -250,5 +301,39 @@ describe('setOn', () => {
         expect(mockCallback.mock.calls[0][0]).toBe(null);
         expect(mockCallback.mock.calls[0][1]).toBe('set');
         expect(platform.sleep.mock.calls.length).toBe(1);
+    });
+});
+
+describe('markSeenCamerasAsVisible', () => {
+    it('should mark camera as reachable', () => {
+        const uuid1 = faker.random.uuid();
+        const uuid2 = faker.random.uuid();
+        const accessory1 = mockCameraAccessory(uuid1, uuid1, false);
+        const accessory2 = mockCameraAccessory(uuid1, uuid1, false);
+        const camera1 = mockBlinkCamera(uuid1);
+        const camera2 = mockBlinkCamera(uuid2);
+        platform.accessories[uuid1] = accessory1;
+        platform.accessories[uuid2] = accessory2;
+        platform._blink.cameras[uuid1] = camera1;
+        platform._blink.cameras[uuid2] = camera1;
+        platform.updateAccessory = jest.fn();
+        platform.markSeenCamerasAsVisible();
+        expect(platform.accessories[uuid1].reachable).toBe(true);
+        expect(platform.updateAccessory.mock.calls.length).toBe(2);
+    });
+});
+
+describe('removeCamerasNoLongerVisible', () => {
+    it('should remove cameras which are not reachable', () => {
+        const camera1uuid = faker.random.uuid();
+        const camera1 = mockCameraAccessory(camera1uuid, camera1uuid, false);
+        const camera2uuid = faker.random.uuid();
+        const camera2 = mockCameraAccessory(camera2uuid, camera2uuid, true);
+        platform.accessories[camera1uuid] = camera1;
+        platform.accessories[camera2uuid] = camera2;
+        platform.removeCamerasNoLongerVisible();
+        expect(platform.accessories[camera1uuid]).toBeUndefined();
+        expect(platform.api.unregisterPlatformAccessories.mock.calls.length).toBe(1);
+        expect(platform.accessories[camera2uuid]).toBeDefined();
     });
 });
