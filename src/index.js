@@ -51,11 +51,18 @@ class BlinkSecurityPlatform {
                 if (this.discovery === true) {
                     setInterval(() => {
                         this.discover();
-                    }, 30000);
+                    }, 60000);
                 }
             });
         }
     }
+
+    configureAccessory(accessory) {
+        accessory.reachable = true;
+        this.accessories[accessory.UUID] = this.updateAccessory(accessory);
+        this.log(`[${accessory.displayName}] Loaded cached accessory`);
+    }
+
 
     getBlink() {
         if (this._blinkts === undefined || new Date() - this._blinkts > 86340000) {
@@ -69,8 +76,8 @@ class BlinkSecurityPlatform {
 
     addCamera(uuid, camera) {
         if (this.accessories[uuid] === undefined) {
-            const newAccessory = new Accessory(camera.name, uuid, 8);
-            this.log('Created new accessory ' + newAccessory.UUID);
+            const newAccessory = new Accessory(`${camera.name} Camera`, uuid, 8);
+            this.log(`[${camera.name}] Added`);
             newAccessory.context.isCamera = true;
             newAccessory.context.id = camera.id;
             this.updateAccessory(newAccessory);
@@ -81,8 +88,8 @@ class BlinkSecurityPlatform {
 
     addNetwork(uuid, network) {
         if (this.accessories[uuid] === undefined) {
-            const newAccessory = new Accessory(network.name, uuid, 8);
-            this.log('Created new accessory ' + newAccessory.UUID);
+            const newAccessory = new Accessory(`${network.name} System`, uuid, 8);
+            this.log(`[${network.name}] Added`);
             newAccessory.context.isNetwork = true;
             newAccessory.context.id = network.id;
             this.updateAccessory(newAccessory);
@@ -92,84 +99,100 @@ class BlinkSecurityPlatform {
     }
 
     updateAccessory(accessory) {
-        this.log(`Updating accessory ${accessory.displayName}`);
+        if (accessory.initialized) {
+            return;
+        }
+        this.log(`[${accessory.displayName}] Registering`);
 
         accessory.getService(Service.AccessoryInformation)
         .setCharacteristic(Characteristic.Name, accessory.displayName)
         .setCharacteristic(Characteristic.Manufacturer, 'blink')
         .setCharacteristic(Characteristic.SerialNumber, accessory.context.id);
 
-        const service = accessory.getService(Service.Switch) || accessory.addService(Service.Switch);
+        const service = accessory.getService(Service.Switch) ?
+            accessory.getService(Service.Switch) :
+            accessory.addService(Service.Switch);
         service.getCharacteristic(Characteristic.On)
-        .on('get', (callback, action) => {
-            this.log(`get ${accessory.displayName}`);
-            this.getOn(accessory, action, callback);
+        .on('get', (callback) => {
+            this.getOn(accessory, callback);
         })
-        .on('set', (callback, action) => {
-            this.log(`set ${accessory.displayName}`);
-            this.setOn(accessory, action, callback);
-        });
+        .on('set', (newValue, callback, context) => {
+            this.setOn(accessory, newValue, callback, context);
+        })
 
-        this.log(`Initialized Camera Switch: ${accessory.context.id} ${accessory.displayName}`);
+        this.log(`[${accessory.displayName}] Initialized`);
         accessory.context.initialized = true;
+        return accessory;
     }
 
-    async getOn(accessory, action, callback) {
+    getCameraById(camera_id) {
+        const blink = this.getBlink();
+        const found = Object.entries(blink.cameras).find(([id, camera]) => {
+            return camera.id === camera_id;
+        });
+        if (found) {
+            return found[1];
+        }
+    };
+
+    getNetworkById(network_id) {
+        const blink = this.getBlink();
+        const found = Object.entries(blink.networks).find(([id, network]) => {
+            return network.id === network_id;
+        });
+        if (found) {
+            return found[1];
+        }
+    };
+
+    getOn(accessory, callback) {
         const blink = this.getBlink();
 
         if (accessory.context.isNetwork) {
-            try {
-                // await blink.setupSystem();
-                const response = await blink.isArmed();
-                callback(null, response);
-            } catch (error) {
-                this.log(error);
-            }
-        } else {
-            try {
-                if (blink.cameras) {
-                    Object.entries(blink.cameras).forEach(([id, camera]) => {
-                        if (accessory.context.id === id) {
-                            callback(null, camera.enabled);
-                        }
-                    })
+                const network = this.getNetworkById(accessory.context.id);
+                if (network) {
+                    this.log(`[${accessory.displayName}] is ${network.armed ? 'armed': 'disarmed'}`);
+                    callback(null, network.armed);
                 }
-            } catch (error) {
-                this.log(error);
+        } else {
+            const camera = this.getCameraById(accessory.context.id);
+            if (camera) {
+                this.log(`[${accessory.displayName}] is ${camera.enabled ? 'armed' : 'disarmed'}`);
+                callback(null, camera.enabled);
             }
         }
     }
 
-    async setOn(accessory, action, callback) {
+    async setOn(accessory, value, callback) {
         const blink = this.getBlink();
-
-        this.log(`Turning ${action ? "on" : "off"} ${accessory.context.id}`);
-
+        const key = `${accessory.context.id}-set`;
         if (accessory.context.isNetwork) {
-            await this.lock.acquire(accessory.context.id, async () => {
-                try {
-                    // await blink.setupSystem();
-                    await blink.setArmed(action);
-                    callback(null, action);
-                    await this.sleep(1500);
-                } catch (error) {
-                    this.log(error);
+            await this.lock.acquire(key, async () => {
+                const network = this.getNetworkById(accessory.context.id);
+                if (network) {
+                    try {
+                        await blink.setArmed(value, [accessory.context.id]);
+                        this.log(`[${accessory.displayName}] ${value ? "arm" : "disarm"}`);
+                        await this.sleep(3000);
+                        callback();
+                    } catch (error) {
+                        this.log(error);
+                    }
                 }
             });
         } else {
-            await this.lock.acquire(accessory.context.id, async token => {
-                try {
-                    await blink.getCameras();
-                    Object.entries(blink.cameras).forEach(async ([id, camera]) => {
-                        if (accessory.context.id === camera.id) {
-                            blink.getLinks();
-                            await camera.setMotionDetect(action);
-                            callback(null, action);
-                            await this.sleep(1500);
-                        }
-                    });
-                } catch (error) {
-                    this.log(error);
+            await this.lock.acquire(key, async () => {
+                const camera = this.getCameraById(accessory.context.id);
+                if (camera) {
+                    try {
+                        blink.getLinks();
+                        await camera.setMotionDetect(value);
+                        this.log(`[${accessory.displayName}] ${value ? "arm" : "disarm"}`);
+                        await this.sleep(3000);
+                        callback();
+                    } catch (error) {
+                        this.log(error);
+                    }
                 }
             });
         }
@@ -179,19 +202,13 @@ class BlinkSecurityPlatform {
         const blink = this.getBlink();
         // Mark seen cameras as visible
         Object.entries(this.accessories).forEach(([uuid, accessory]) => {
-            Object.entries(blink.cameras).forEach(([id, camera]) => {
-                this.log(`Checking Camera ${id}`);
-                if (accessory.context.isCamera) {
-                    if (id === accessory.context.id) {
-                        this.log(`Setting cached Accessory ${uuid} ${accessory.displayName} as reachable`);
-                        this.accessories[id].reachable = true;
-                        if (!accessory.context.initialized) {
-                            this.log(`Updating cached Accessory ${uuid} ${accessory.displayName}`)
-                            this.updateAccessory(accessory);
-                        }
-                    }
-                }
-            });
+            const camera = this.getCameraById(accessory.context.id);
+            const network = this.getNetworkById(accessory.context.id);
+            if (camera || network) {
+                this.log(`[${accessory.displayName}] Reachable`);
+                this.accessories[uuid].reachable = true;
+                this.updateAccessory(accessory);
+            }
         });
     }
 
@@ -202,12 +219,27 @@ class BlinkSecurityPlatform {
             if (accessory.reachable === true) {
                 reachableAccessories[uuid] = accessory;
             } else {
-                this.log("Unreachable Camera Switch: " + accessory.context.id + ' ' + accessory.displayName);
-                this.log('Unregister accessory ' + accessory.UUID);
+                this.log(`[${accessory.displayName}] Unreachable`);
                 this.api.unregisterPlatformAccessories("homebridge-platform-blink-security", "BlinkSecurityPlatform", [accessory]);
             }
         });
         this.accessories = reachableAccessories;
+    }
+
+    updateAccessories(accessories) {
+        let newAccessories = {};
+        Object.entries(accessories).forEach(([uuid, accessory]) => {
+            const camera = this.getCameraById(accessory.context.id);
+            const network = this.getNetworkById(accessory.context.id);
+            if (camera || network) {
+                accessory.reachable = true;
+                newAccessories[uuid] = accessory;
+            } else {
+                this.log(`[${accessory.displayName}] Unregistering`);
+                this.api.unregisterPlatformAccessories("homebridge-platform-blink-security", "BlinkSecurityPlatform", [accessory]);
+            }
+        });
+        return newAccessories;
     }
 
     async discover() {
@@ -218,9 +250,10 @@ class BlinkSecurityPlatform {
 
             try {
                 await blink.setupSystem();
+                this.log("Setup Blink System");
 
-                this.markSeenCamerasAsVisible(blink.cameras);
-                this.removeCamerasNoLongerVisible();
+                // Updating cached accessories to set them reachable if they exist,and unregister them if they don't exist.
+                this.accessories = this.updateAccessories(this.accessories);
 
                 // Add networks as switches
                 if (blink.networks && blink.networks.length) {
