@@ -1,7 +1,5 @@
-
-## NOTE: this project is being refactored. I don't have a time frame on when it will be ready, but for now it's broken and does not currently work. 
-
 # homebridge-platform-blink-security
+
 Homebridge Platform Plugin for Blink Security Cameras, adapted from Homebridge Plugin for Blink Cameras project https://github.com/bartdorsey/homebridge-blinkcameras.
 
 This allows you to arm and disarm your Blink Home Security Cameras using Apple's HomeKit. This is a plugin for the excellent homebridge project https://github.com/nfarina/homebridge.  
@@ -20,8 +18,6 @@ To configure this set it up as a platform in your homebridge config.json file.
       }
     ]
 
-At some point I would like to figure out how to use the API to make this show up also as a HomeKit Camera. For now though it just adds a HomeKit Switch to arm/disarm the system and a HomeKit Switch for each camera to arm/disarm each individual camera motion sensor.
-
 The switch to arm/disarm the system will be given the name from the config. Each camera switch will be given the camera name. Multiple systems and cameras with duplicate names cannot be supported until node-blink-security is updated to support it.
 
-The plugin defaults to refreshing every 30 seconds to add or remove cameras from the system, which is useful for troubleshooting. Discovery can be set to false for less overhead, but will require a reload whenever cameras are added or removed from the Blink system.
+The plugin defaults to refreshing every 60 seconds to add or remove cameras from the system, which is useful for troubleshooting. Discovery can be set to false for less overhead, but will require a reload whenever cameras are added or removed from the Blink system.
