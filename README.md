@@ -1,6 +1,6 @@
-# homebridge-platform-blink-security
+# homebridge-blinkcameras
 
-Homebridge Platform Plugin for Blink Security Cameras, adapted from Homebridge Plugin for Blink Cameras project https://github.com/bartdorsey/homebridge-blinkcameras.
+Homebridge Platform Plugin for Blink Security Cameras.
 
 This allows you to arm and disarm your Blink Home Security Cameras using Apple's HomeKit. This is a plugin for the excellent homebridge project https://github.com/nfarina/homebridge.  
 
