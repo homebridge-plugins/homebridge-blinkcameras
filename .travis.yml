@@ -7,6 +7,7 @@ script:
 - npm run build
 - npm test
 deploy:
+  edge: true
   provider: npm
   email: bart@bartdorsey.com
   api_key:
