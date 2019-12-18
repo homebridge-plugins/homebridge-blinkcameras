@@ -1,0 +1,17 @@
+language: node_js
+node_js:
+- stable
+- '6'
+- '4'
+install:
+- npm install
+script:
+  npm run build
+deploy:
+  provider: npm
+  email: bart@bartdorsey.com
+  api_key:
+    secure: GtRNie8yVtX/rKwEB1s0sjVDQZ9wCiudecY0m/WdfhXxQjDE06dFdacI478c1IcSZHN1dUfbhiCCZ7bGyj6zYwJkEFFGg4dCGBQ4C+2YFp1TgDcZEK3bC5CNf2ZCG0xdrVKIhGM3fldE3wOGlQDv8fSsnQXN5c0fr5HCnyHZLQta9IObqDIj4Xy6QAkccZYNqdu52PIdymp4/NV3JOFCv5qOK33P4n4Q/n9DSgGAgSnmt+J5ikSMmrp416wLDcvNOVwZNtxG31YzZM/H4pL8tZfxOIwo/yBfFkRjcHMcecCuguSsau99B5h8oC0ASSRTwyAlC8H1yjpGGeO6euI2tDtP03MPyEzQTrDN2xU6VDLShEvB7s7wmV5/O0znFd53t/6SZKL3VcO7BFOetcGXttQ2OwJa8jq5iu3CFYWO0qBUQr/31VJ7hFjoOpeAkrGjr+PjZowKq+DXn+2AqhPMP+C6vs5gprj+q5c2XPIegzWOtg+pCbu6HS6NX5Vk+v8VsoPT9OB5Ek03YnW7UNyfuZaRtlhbzhq4qlG/ucejO9+F66TUojX3RBV7p7dbHM1RmDW3kf/9rKnZXqzDOySEHlXnis05a1liWzLJdbObs9qGxHy/DxSbk9Tgitbbaw0Cy4vIdJrPNgBVQvw64tL28o8j8H8rAYeFBHXZZp8hsac=
+  on:
+    tags: true
+    repo: bartdorsey/homebridge-blinkcameras
