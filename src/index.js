@@ -189,6 +189,9 @@ class BlinkSecurityPlatform {
                         await camera.setMotionDetect(value);
                         this.log(`[${accessory.displayName}] ${value ? "arm" : "disarm"}`);
                         await this.sleep(3000);
+                        // This triggers the blink system to refresh it's list of cameras
+                        await blink.setupSystem();
+                        await this.sleep(3000);
                         callback();
                     } catch (error) {
                         this.log(error);
