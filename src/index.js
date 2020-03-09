@@ -39,8 +39,6 @@ class BlinkSecurityPlatform {
         this.accessories = {};
         this.lock = new AsyncLock();
 
-        this.sleep = m => new Promise(r => setTimeout(r, m));
-
         if (api) {
             this.api = api;
             this.api.on('didFinishLaunching', () => {
@@ -55,6 +53,12 @@ class BlinkSecurityPlatform {
                 }
             });
         }
+    }
+
+    sleep(ms) {
+        return new Promise(resolve => {
+            setTimeout(resolve, ms);
+        });
     }
 
     configureAccessory(accessory) {
@@ -201,33 +205,33 @@ class BlinkSecurityPlatform {
         }
     }
 
-    markSeenCamerasAsVisible() {
-        const blink = this.getBlink();
-        // Mark seen cameras as visible
-        Object.entries(this.accessories).forEach(([uuid, accessory]) => {
-            const camera = this.getCameraById(accessory.context.id);
-            const network = this.getNetworkById(accessory.context.id);
-            if (camera || network) {
-                this.log(`[${accessory.displayName}] Reachable`);
-                this.accessories[uuid].reachable = true;
-                this.updateAccessory(accessory);
-            }
-        });
-    }
+    // markSeenCamerasAsVisible() {
+    //     const blink = this.getBlink();
+    //     // Mark seen cameras as visible
+    //     Object.entries(this.accessories).forEach(([uuid, accessory]) => {
+    //         const camera = this.getCameraById(accessory.context.id);
+    //         const network = this.getNetworkById(accessory.context.id);
+    //         if (camera || network) {
+    //             this.log(`[${accessory.displayName}] Reachable`);
+    //             this.accessories[uuid].reachable = true;
+    //             this.updateAccessory(accessory);
+    //         }
+    //     });
+    // }
 
-    removeCamerasNoLongerVisible() {
-        // remove accessories no longer visible
-        let reachableAccessories = {};
-        Object.entries(this.accessories).forEach(([uuid, accessory]) => {
-            if (accessory.reachable === true) {
-                reachableAccessories[uuid] = accessory;
-            } else {
-                this.log(`[${accessory.displayName}] Unreachable`);
-                this.api.unregisterPlatformAccessories("homebridge-platform-blink-security", "BlinkSecurityPlatform", [accessory]);
-            }
-        });
-        this.accessories = reachableAccessories;
-    }
+    // removeCamerasNoLongerVisible() {
+    //     // remove accessories no longer visible
+    //     let reachableAccessories = {};
+    //     Object.entries(this.accessories).forEach(([uuid, accessory]) => {
+    //         if (accessory.reachable === true) {
+    //             reachableAccessories[uuid] = accessory;
+    //         } else {
+    //             this.log(`[${accessory.displayName}] Unreachable`);
+    //             this.api.unregisterPlatformAccessories("homebridge-platform-blink-security", "BlinkSecurityPlatform", [accessory]);
+    //         }
+    //     });
+    //     this.accessories = reachableAccessories;
+    // }
 
     updateAccessories(accessories) {
         let newAccessories = {};
