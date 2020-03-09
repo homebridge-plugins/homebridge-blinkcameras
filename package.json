@@ -1,6 +1,6 @@
 {
   "name": "homebridge-blinkcameras",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Blink Security Platform plugin for homebridge",
   "license": "ISC",
   "keywords": [
@@ -19,23 +19,23 @@
     "homebridge": ">=0.2.0"
   },
   "dependencies": {
-    "@babel/polyfill": "^7.7.0",
+    "@babel/polyfill": "^7.8.7",
+    "@hapi/cryptiles": "^5.0.0",
     "async-lock": "^1.2.2",
-    "node-blink-security": "^3.0.6",
-    "@hapi/cryptiles": ">=4.2.1",
-    "lodash": ">=4.17.15"
+    "lodash": ">=4.17.15",
+    "node-blink-security": "^3.0.6"
   },
   "devDependencies": {
-    "@babel/core": "^7.7.5",
-    "@babel/plugin-proposal-class-properties": "^7.7.4",
-    "@babel/preset-env": "^7.7.6",
-    "@babel/preset-typescript": "^7.7.4",
+    "@babel/core": "^7.8.7",
+    "@babel/plugin-proposal-class-properties": "^7.8.3",
+    "@babel/preset-env": "^7.8.7",
+    "@babel/preset-typescript": "^7.8.3",
     "babel-jest": "^24.9.0",
     "faker": "^4.1.0",
     "jest": "^24.9.0",
     "prettier": "^1.19.1",
-    "rollup": "^1.27.13",
-    "rollup-plugin-babel": "^4.3.3",
+    "rollup": "^1.32.1",
+    "rollup-plugin-babel": "^4.4.0",
     "rollup-plugin-node-resolve": "^5.2.0"
   },
   "scripts": {
