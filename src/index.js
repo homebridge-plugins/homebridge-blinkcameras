@@ -34,7 +34,18 @@ class BlinkSecurityPlatform {
         log("Init");
         this.log = log;
         this.config = config;
-        this.blink = new Blink(this.config.username, this.config.password);
+        this.blinkConfig = [
+            this.config.username,
+            this.config.password,
+            this.config.deviceId,
+            {
+                auth_2FA: false,
+                verification_timeout: 6000,
+                device_name: this.config.deviceName
+            }
+        ];
+        log(config);
+        this.blink = new Blink(...this.blinkConfig);
         this.discovery = this.config.discovery === undefined ? true : this.config.discovery;
         this.accessories = {};
         this.lock = new AsyncLock();
@@ -71,7 +82,7 @@ class BlinkSecurityPlatform {
     getBlink() {
         if (this._blinkts === undefined || new Date() - this._blinkts > 86340000) {
             this._blinkts = new Date();
-            this._blink = new Blink(this.config.username, this.config.password);
+            this._blink = new Blink(...this.blinkConfig);
             return this._blink;
         } else {
             return this._blink;
