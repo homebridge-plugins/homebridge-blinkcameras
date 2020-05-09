@@ -10,6 +10,8 @@
 //         "name": "Blink System",
 //         "username": "me@example.com",
 //         "password": "PASSWORD",
+//         "deviceId": "A made up device Id",
+//         "deviceName": "A made up device Name",
 //         "discovery": true    // optional: set to false to disable intermittent discovery and only discovery on boot
 //     }
 // ]
@@ -20,7 +22,6 @@ const AsyncLock = require('async-lock');
 let Accessory, Service, Characteristic, UUIDGen;
 
 module.exports = function (homebridge) {
-    console.log("homebridge API version: " + homebridge.version);
     Accessory = homebridge.platformAccessory;
     Service = homebridge.hap.Service;
     Characteristic = homebridge.hap.Characteristic;
@@ -44,8 +45,7 @@ class BlinkSecurityPlatform {
                 device_name: this.config.deviceName
             }
         ];
-        log(config);
-        this.blink = new Blink(...this.blinkConfig);
+        this.blink = this.getBlink();
         this.discovery = this.config.discovery === undefined ? true : this.config.discovery;
         this.accessories = {};
         this.lock = new AsyncLock();
@@ -82,6 +82,7 @@ class BlinkSecurityPlatform {
     getBlink() {
         if (this._blinkts === undefined || new Date() - this._blinkts > 86340000) {
             this._blinkts = new Date();
+            this.log(`Authenticating with Blink API as ${this.config.username}`);
             this._blink = new Blink(...this.blinkConfig);
             return this._blink;
         } else {
@@ -215,34 +216,6 @@ class BlinkSecurityPlatform {
             });
         }
     }
-
-    // markSeenCamerasAsVisible() {
-    //     const blink = this.getBlink();
-    //     // Mark seen cameras as visible
-    //     Object.entries(this.accessories).forEach(([uuid, accessory]) => {
-    //         const camera = this.getCameraById(accessory.context.id);
-    //         const network = this.getNetworkById(accessory.context.id);
-    //         if (camera || network) {
-    //             this.log(`[${accessory.displayName}] Reachable`);
-    //             this.accessories[uuid].reachable = true;
-    //             this.updateAccessory(accessory);
-    //         }
-    //     });
-    // }
-
-    // removeCamerasNoLongerVisible() {
-    //     // remove accessories no longer visible
-    //     let reachableAccessories = {};
-    //     Object.entries(this.accessories).forEach(([uuid, accessory]) => {
-    //         if (accessory.reachable === true) {
-    //             reachableAccessories[uuid] = accessory;
-    //         } else {
-    //             this.log(`[${accessory.displayName}] Unreachable`);
-    //             this.api.unregisterPlatformAccessories("homebridge-platform-blink-security", "BlinkSecurityPlatform", [accessory]);
-    //         }
-    //     });
-    //     this.accessories = reachableAccessories;
-    // }
 
     updateAccessories(accessories) {
         let newAccessories = {};
