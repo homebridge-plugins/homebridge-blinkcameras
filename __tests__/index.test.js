@@ -1,9 +1,12 @@
 const plugin = require('../src/index');
-jest.mock('node-blink-security');
-jest.mock('async-lock');
 const Blink = require('node-blink-security');
 const AsyncLock = require('async-lock');
+jest.mock("node-blink-security");
+jest.mock("async-lock");
+
 const faker = require('faker');
+
+console.log(new Blink());
 
 let BlinkSecurityPlatform;
 
