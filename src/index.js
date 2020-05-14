@@ -6,7 +6,7 @@
 // Remember to add platform to config.json. Example:
 // "platforms": [
 //     {
-//         "platform": "BlinkSecurityPlatform",
+//         "platform": "BlinkCameras",
 //         "name": "Blink System",
 //         "username": "me@example.com",
 //         "password": "PASSWORD",
@@ -19,6 +19,9 @@ const Blink = require('node-blink-security');
 
 const AsyncLock = require('async-lock');
 
+const platformName = "homebridge-blinkcameras";
+const className = "BlinkCameras";
+
 let Accessory, Service, Characteristic, UUIDGen;
 
 module.exports = function (homebridge) {
@@ -26,11 +29,11 @@ module.exports = function (homebridge) {
     Service = homebridge.hap.Service;
     Characteristic = homebridge.hap.Characteristic;
     UUIDGen = homebridge.hap.uuid;
-    homebridge.registerPlatform("homebridge-platform-blink-security", "BlinkSecurityPlatform", BlinkSecurityPlatform, true);
+    homebridge.registerPlatform(platformName, className, BlinkCameras, true);
     return homebridge;
 };
 
-class BlinkSecurityPlatform {
+class BlinkCameras {
     constructor(log, config, api) {
         log("Init");
         this.log = log;
@@ -98,7 +101,7 @@ class BlinkSecurityPlatform {
             newAccessory.context.id = camera.id;
             this.updateAccessory(newAccessory);
             this.accessories[newAccessory.UUID] = newAccessory;
-            this.api.registerPlatformAccessories("homebridge-platform-blink-security", "BlinkSecurityPlatform", [newAccessory]);
+            this.api.registerPlatformAccessories(platformName, className, [newAccessory]);
         }
     }
 
@@ -110,7 +113,7 @@ class BlinkSecurityPlatform {
             newAccessory.context.id = network.id;
             this.updateAccessory(newAccessory);
             this.accessories[newAccessory.UUID] = newAccessory;
-            this.api.registerPlatformAccessories("homebridge-platform-blink-security", "BlinkSecurityPlatform", [newAccessory]);
+            this.api.registerPlatformAccessories(platformName, className, [newAccessory]);
         }
     }
 
@@ -227,7 +230,7 @@ class BlinkSecurityPlatform {
                 newAccessories[uuid] = accessory;
             } else {
                 this.log(`[${accessory.displayName}] Unregistering`);
-                this.api.unregisterPlatformAccessories("homebridge-platform-blink-security", "BlinkSecurityPlatform", [accessory]);
+                this.api.unregisterPlatformAccessories(platformName, className, [accessory]);
             }
         });
         return newAccessories;
@@ -249,7 +252,7 @@ class BlinkSecurityPlatform {
                 // Add networks as switches
                 if (blink.networks && blink.networks.length) {
                     blink.networks.forEach((network) => {
-                        const uuid = UUIDGen.generate(`homebridge-platform-blink-security-${this.config.name}-${network.id}`);
+                        const uuid = UUIDGen.generate(`${platformName}-${this.config.name}-${network.id}`);
                         this.addNetwork(uuid, network);
                     });
                 }
@@ -257,7 +260,7 @@ class BlinkSecurityPlatform {
                 // Add cameras as switches
                 if (blink.cameras) {
                     Object.entries(blink.cameras).forEach(([id, camera]) => {
-                        const uuid = UUIDGen.generate(`homebridge-platform-blink-security-${this.config.name}-${camera.id}`);
+                        const uuid = UUIDGen.generate(`${platformName}-${this.config.name}-${camera.id}`);
                         this.addCamera(uuid, camera);
                     })
                 }
