@@ -164,20 +164,34 @@ class BlinkCameras {
         }
     };
 
-    getOn(accessory, callback) {
+    async getOn(accessory, callback) {
         const blink = this.getBlink();
-
         if (accessory.context.isNetwork) {
-                const network = this.getNetworkById(accessory.context.id);
+                let summary;
+                try {
+                    summary = await blink.getSummary();
+                } catch (e) {
+                    this.log("Couldn't retrieve summary status");
+                    this.log(e);
+                }
+                const network = summary[accessory.context.id];
                 if (network) {
-                    this.log(`[${accessory.displayName}] is ${network.armed ? 'armed': 'disarmed'}`);
-                    callback(null, network.armed);
+                    const armed = network.network.armed;
+                    this.log(`[${accessory.displayName}] is ${armed ? 'armed': 'disarmed'}`);
+                    callback(null, armed);
                 }
         } else {
-            const camera = this.getCameraById(accessory.context.id);
+            let cameras;
+            try {
+                cameras = await blink.getCameras();
+            } catch (e) {
+                this.log("Couldn't retrieve camera status");
+                this.log(e);
+            }
+            const camera = cameras[accessory.context.id];
             if (camera) {
-                this.log(`[${accessory.displayName}] is ${camera.enabled ? 'armed' : 'disarmed'}`);
-                callback(null, camera.enabled);
+                this.log(`[${accessory.displayName}] is ${camera.armed ? 'armed' : 'disarmed'}`);
+                callback(null, camera.armed);
             }
         }
     }

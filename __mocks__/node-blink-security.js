@@ -5,6 +5,7 @@ class Blink {
         this.setArmed = jest.fn();
         this.getCameras = jest.fn();
         this.getLinks = jest.fn();
+        this.getSummary = jest.fn();
     }
 }
 
