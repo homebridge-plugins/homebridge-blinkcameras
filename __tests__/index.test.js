@@ -1,11 +1,14 @@
 const plugin = require('../src/index');
-jest.mock('node-blink-security');
-jest.mock('async-lock');
 const Blink = require('node-blink-security');
 const AsyncLock = require('async-lock');
+jest.mock("node-blink-security");
+jest.mock("async-lock");
+
 const faker = require('faker');
 
-let BlinkSecurityPlatform;
+console.log(new Blink());
+
+let BlinkCameras;
 
 const mockHomeBridge = () => {
     return {
@@ -27,7 +30,7 @@ const mockHomeBridge = () => {
         },
         platformAccessory: jest.fn().mockImplementation((network, uuid) => { return mockAccessory(uuid) }),
         registerPlatform: (name, className, platform) => {
-            BlinkSecurityPlatform = platform;
+            BlinkCameras = platform;
         }
     };
 }
@@ -123,7 +126,7 @@ let bridge;
 
 beforeEach(() => {
     bridge = plugin(mockHomeBridge());
-    platform = new BlinkSecurityPlatform(mockLog, mockConfig, mockApi());
+    platform = new BlinkCameras(mockLog, mockConfig, mockApi());
     platform.sleep = jest.fn(() => {});
     platform.lock.acquire = jest.fn(async (id, callback) => {
         await callback('token');
