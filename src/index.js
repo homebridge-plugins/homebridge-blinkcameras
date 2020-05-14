@@ -146,23 +146,23 @@ class BlinkCameras {
 
     getCameraById(camera_id) {
         const blink = this.getBlink();
-        const found = Object.entries(blink.cameras).find(([id, camera]) => {
+        const found = Object.entries(blink.cameras).find(([, camera]) => {
             return camera.id === camera_id;
         });
         if (found) {
             return found[1];
         }
-    };
+    }
 
     getNetworkById(network_id) {
         const blink = this.getBlink();
-        const found = Object.entries(blink.networks).find(([id, network]) => {
+        const found = Object.entries(blink.networks).find(([, network]) => {
             return network.id === network_id;
         });
         if (found) {
             return found[1];
         }
-    };
+    }
 
     async getOn(accessory, callback) {
         const blink = this.getBlink();
@@ -170,29 +170,39 @@ class BlinkCameras {
                 let summary;
                 try {
                     summary = await blink.getSummary();
+                    const network = summary[accessory.context.id];
+                    if (network) {
+                        const armed = network.network.armed;
+                        this.log(
+                            `[${accessory.displayName}] is ${
+                                armed ? "armed" : "disarmed"
+                            }`
+                        );
+                        callback(null, armed);
+                    }
                 } catch (e) {
                     this.log("Couldn't retrieve summary status");
                     this.log(e);
                 }
-                const network = summary[accessory.context.id];
-                if (network) {
-                    const armed = network.network.armed;
-                    this.log(`[${accessory.displayName}] is ${armed ? 'armed': 'disarmed'}`);
-                    callback(null, armed);
-                }
+
         } else {
             let cameras;
             try {
                 cameras = await blink.getCameras();
+                const camera = cameras[accessory.context.id];
+                if (camera) {
+                    this.log(
+                        `[${accessory.displayName}] is ${
+                            camera.armed ? "armed" : "disarmed"
+                        }`
+                    );
+                    callback(null, camera.armed);
+                }
             } catch (e) {
                 this.log("Couldn't retrieve camera status");
                 this.log(e);
             }
-            const camera = cameras[accessory.context.id];
-            if (camera) {
-                this.log(`[${accessory.displayName}] is ${camera.armed ? 'armed' : 'disarmed'}`);
-                callback(null, camera.armed);
-            }
+
         }
     }
 
@@ -273,7 +283,7 @@ class BlinkCameras {
 
                 // Add cameras as switches
                 if (blink.cameras) {
-                    Object.entries(blink.cameras).forEach(([id, camera]) => {
+                    Object.entries(blink.cameras).forEach(([, camera]) => {
                         const uuid = UUIDGen.generate(`${platformName}-${this.config.name}-${camera.id}`);
                         this.addCamera(uuid, camera);
                     })

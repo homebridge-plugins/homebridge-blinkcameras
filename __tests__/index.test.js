@@ -55,11 +55,7 @@ const mockApi = () => {
 };
 
 const mockCharacteristic = {
-    on: jest.fn().mockImplementation((action, callback) => {
-        callback(
-            jest.fn(() => {}),
-            action
-        );
+    on: jest.fn().mockImplementation(() => {
         return mockCharacteristic;
     })
 };
