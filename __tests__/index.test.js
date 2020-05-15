@@ -327,7 +327,7 @@ describe("getOn", () => {
         platform._blink.getCameras.mockImplementationOnce(async () => {
             return {
                 [accessory.context.id]: {
-                    armed: true
+                    enabled: true
                 }
             };
         });

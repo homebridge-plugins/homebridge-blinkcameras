@@ -193,10 +193,10 @@ class BlinkCameras {
                 if (camera) {
                     this.log(
                         `[${accessory.displayName}] is ${
-                            camera.armed ? "armed" : "disarmed"
+                            camera.enabled ? "armed" : "disarmed"
                         }`
                     );
-                    callback(null, camera.armed);
+                    callback(null, camera.enabled);
                 }
             } catch (e) {
                 this.log("Couldn't retrieve camera status");
