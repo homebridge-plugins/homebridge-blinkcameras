@@ -60,3 +60,4 @@ typings/
 # dist directory (built at publish time)
 dist
 
+/scripts
