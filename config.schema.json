@@ -18,7 +18,7 @@
             },
             "password": {
                 "title": "password",
-                "type": "password",
+                "type": "string",
                 "required": true
             },
             "deviceId": {

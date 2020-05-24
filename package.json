@@ -1,6 +1,6 @@
 {
     "name": "homebridge-blinkcameras",
-    "version": "1.0.9",
+    "version": "1.0.10",
     "description": "Blink Camera plugin for homebridge",
     "license": "ISC",
     "keywords": [
