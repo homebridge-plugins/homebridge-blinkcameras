@@ -30,11 +30,8 @@ To configure this set it up as a platform in your homebridge config.json file.
         "username"   : "<your blink email address>",
         "password"   : "<your blink password",
         "deviceId"   : "<a made up device id>",
-        "deviceName" : "<a made up device name>",
-        "discovery"  : true    // optional: set to false to disable intermittent discovery
+        "deviceName" : "<a made up device name>"
       }
     ]
 
 The switch to arm/disarm the system will be given the name from the config. Each camera switch will be given the camera name. Multiple systems and cameras with duplicate names cannot be supported until node-blink-security is updated to support it.
-
-The plugin defaults to refreshing every 60 seconds to add or remove cameras from the system, which is useful for troubleshooting. Discovery can be set to false for less overhead, but will require a reload whenever cameras are added or removed from the Blink system.
