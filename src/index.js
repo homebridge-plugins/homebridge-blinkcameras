@@ -56,18 +56,17 @@ class BlinkCameras {
         if (api) {
             this.api = api;
             // TODO: This is temporarily disabled until we solve all the authentication issues
-            //
-            // this.api.on("didFinishLaunching", () => {
-            //     this.log("Finished Launching"); // initial discovery
+            this.api.on("didFinishLaunching", () => {
+                this.log("Finished Launching"); // initial discovery
 
-            //     this.discover(); // intermittent discovery
+                this.discover(); // intermittent discovery
 
-            //     if (this.discovery === true) {
-            //         setInterval(() => {
-            //             this.discover();
-            //         }, 60000);
-            //     }
-            // });
+                // if (this.discovery === true) {
+                //     setInterval(() => {
+                //         this.discover();
+                //     }, 60000);
+                // }
+            });
         }
     }
 
