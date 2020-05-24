@@ -1,5 +1,5 @@
 {
-    "pluginAlias": "homebridge-blinkcameras",
+    "pluginAlias": "BlinkCameras",
     "pluginType": "platform",
     "singular": true,
     "schema": {
