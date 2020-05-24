@@ -1,47 +1,47 @@
 {
-  "name": "homebridge-blinkcameras",
-  "version": "1.0.3",
-  "description": "Blink Camera plugin for homebridge",
-  "license": "ISC",
-  "keywords": [
-    "homebridge-plugin"
-  ],
-  "main": "dist/index.js",
-  "files": [
-    "dist"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "git@github.com:bartdorsey/homebridge-blinkcameras.git"
-  },
-  "engines": {
-    "node": ">=0.12.0",
-    "homebridge": ">=0.2.0"
-  },
-  "dependencies": {
-    "@babel/polyfill": "^7.8.7",
-    "@hapi/cryptiles": "^5.0.0",
-    "async-lock": "^1.2.4",
-    "lodash": ">=4.17.15",
-    "node-blink-security": "^4.1.0"
-  },
-  "devDependencies": {
-    "@babel/core": "^7.9.6",
-    "@babel/plugin-proposal-class-properties": "^7.8.3",
-    "@babel/preset-env": "^7.9.6",
-    "@babel/preset-typescript": "^7.9.0",
-    "babel-jest": "^24.9.0",
-    "faker": "^4.1.0",
-    "jest": "^24.9.0",
-    "prettier": "^1.19.1",
-    "rollup": "^1.32.1",
-    "rollup-plugin-babel": "^4.4.0",
-    "rollup-plugin-node-resolve": "^5.2.0"
-  },
-  "scripts": {
-    "dev": "rollup -c -w",
-    "build": "rollup -c",
-    "test": "jest",
-    "prepublishOnly": "npm run build"
-  }
+    "name": "homebridge-blinkcameras",
+    "version": "1.0.4",
+    "description": "Blink Camera plugin for homebridge",
+    "license": "ISC",
+    "keywords": [
+        "homebridge-plugin"
+    ],
+    "main": "dist/index.js",
+    "files": [
+        "dist"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "git@github.com:bartdorsey/homebridge-blinkcameras.git"
+    },
+    "engines": {
+        "node": ">=0.12.0",
+        "homebridge": ">=0.2.0"
+    },
+    "dependencies": {
+        "@babel/polyfill": "^7.8.7",
+        "@hapi/cryptiles": "^5.1.0",
+        "async-lock": "^1.2.4",
+        "lodash": ">=4.17.15",
+        "node-blink-security": "^4.1.4"
+    },
+    "devDependencies": {
+        "@babel/core": "^7.9.6",
+        "@babel/plugin-proposal-class-properties": "^7.8.3",
+        "@babel/preset-env": "^7.9.6",
+        "@babel/preset-typescript": "^7.9.0",
+        "babel-jest": "^26.0.1",
+        "faker": "^4.1.0",
+        "jest": "^26.0.1",
+        "prettier": "^2.0.5",
+        "rollup": "^2.10.9",
+        "rollup-plugin-babel": "^4.4.0",
+        "rollup-plugin-node-resolve": "^5.2.0"
+    },
+    "scripts": {
+        "dev": "rollup -c -w",
+        "build": "rollup -c",
+        "test": "jest",
+        "prepublishOnly": "npm run build"
+    }
 }
