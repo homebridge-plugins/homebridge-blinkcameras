@@ -1,0 +1,40 @@
+{
+    "pluginAlias": "homebridge-blinkcameras",
+    "pluginType": "platform",
+    "singular": true,
+    "schema": {
+        "type": "object",
+        "properties": {
+            "name": {
+                "title": "Name",
+                "description": "Whatever name you want to call your System",
+                "type": "string",
+                "required": true
+            },
+            "username": {
+                "title": "username",
+                "type": "string",
+                "required": true
+            },
+            "password": {
+                "title": "password",
+                "type": "password",
+                "required": true
+            },
+            "deviceId": {
+                "title": "Device ID",
+                "description": "A made up device ID (will be sent to blink)",
+                "type": "string",
+                "required": true
+            },
+            "deviceName": {
+                "title": "Device Name",
+                "description": "A made up device Name (will be sent to blink)",
+                "type": "string",
+                "required": true
+            }
+        }
+    },
+    "form": null,
+    "display": null
+}
