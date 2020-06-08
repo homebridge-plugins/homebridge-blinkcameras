@@ -92,6 +92,7 @@ class BlinkCameras {
                 `Authenticating with Blink API as ${this.config.username}`
             );
             this._blink = new Blink(...this.blinkConfig);
+            this.discover();
             return this._blink;
         } else {
             return this._blink;
