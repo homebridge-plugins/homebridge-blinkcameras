@@ -1,6 +1,10 @@
 "use strict";
 
-/* jshint node: true */
+const Blink = require("node-blink-security");
+const AsyncLock = require("async-lock");
+const moment = require("moment");
+const { sleep } = require("./utils");
+
 // Blink Security Platform Plugin for HomeBridge (https://github.com/nfarina/homebridge)
 //
 // Remember to add platform to config.json. Example:
@@ -14,9 +18,6 @@
 //         "deviceName": "A made up device Name"
 //     }
 // ]
-const Blink = require("node-blink-security");
-
-const AsyncLock = require("async-lock");
 
 const platformName = "homebridge-blinkcameras";
 const className = "BlinkCameras";
@@ -37,7 +38,7 @@ class BlinkCameras {
         log("Init");
         this.log = log;
         this.config = config;
-        this.blinkConfig = [
+        this._blinkConfig = [
             this.config.username,
             this.config.password,
             this.config.deviceId,
@@ -47,7 +48,8 @@ class BlinkCameras {
                 device_name: this.config.deviceName,
             },
         ];
-        this.blink = this.getBlink();
+        this._blink = new Blink(this._blinkConfig);
+        this._nextAuthentication = moment();
         this.discovery =
             this.config.discovery === undefined ? true : this.config.discovery;
         this.accessories = {};
@@ -70,10 +72,12 @@ class BlinkCameras {
         }
     }
 
-    sleep(ms) {
-        return new Promise((resolve) => {
-            setTimeout(resolve, ms);
-        });
+    get blink() {
+        if (this._blink) {
+            return this._blink;
+        }
+        this._blink = new Blink(this._blinkConfig);
+        return this._blink
     }
 
     configureAccessory(accessory) {
@@ -82,19 +86,18 @@ class BlinkCameras {
         this.log(`[${accessory.displayName}] Loaded cached accessory`);
     }
 
-    getBlink() {
-        if (
-            this._blinkts === undefined ||
-            new Date() - this._blinkts > 86340000
-        ) {
-            this._blinkts = new Date();
-            this.log(
-                `Authenticating with Blink API as ${this.config.username}`
-            );
-            this._blink = new Blink(...this.blinkConfig);
-            return this._blink;
-        } else {
-            return this._blink;
+    async authenticate() {
+        if (moment().isAfter(this._nextAuthentication)) {
+            try {
+                this._nextAuthentication = moment().add(24, 'hours');
+                this.log(
+                    `Authenticating with Blink API as ${this.config.username}`
+                );
+                // @ts-ignore
+                await this.blink.setupSystem();
+            } catch (e) {
+                this.log('Error authenticating with blink API', e);
+            }
         }
     }
 
@@ -167,8 +170,7 @@ class BlinkCameras {
     }
 
     getCameraById(camera_id) {
-        const blink = this.getBlink();
-        const found = Object.entries(blink.cameras).find(([, camera]) => {
+        const found = Object.entries(this.blink.cameras).find(([, camera]) => {
             return camera.id === camera_id;
         });
         if (found) {
@@ -177,8 +179,7 @@ class BlinkCameras {
     }
 
     getNetworkById(network_id) {
-        const blink = this.getBlink();
-        const found = Object.entries(blink.networks).find(([, network]) => {
+        const found = Object.entries(this.blink.networks).find(([, network]) => {
             return network.id === network_id;
         });
         if (found) {
@@ -187,11 +188,10 @@ class BlinkCameras {
     }
 
     async getOn(accessory, callback) {
-        const blink = this.getBlink();
         if (accessory.context.isNetwork) {
             let summary;
             try {
-                summary = await blink.getSummary();
+                summary = await this.blink.getSummary();
                 const network = summary[accessory.context.id];
                 if (network) {
                     const armed = network.network.armed;
@@ -209,7 +209,7 @@ class BlinkCameras {
         } else {
             let cameras;
             try {
-                cameras = await blink.getCameras();
+                cameras = await this.blink.getCameras();
                 const camera = cameras[accessory.context.id];
                 if (camera) {
                     this.log(
@@ -227,20 +227,19 @@ class BlinkCameras {
     }
 
     async setOn(accessory, value, callback) {
-        const blink = this.getBlink();
         const key = `${accessory.context.id}-set`;
         if (accessory.context.isNetwork) {
             await this.lock.acquire(key, async () => {
                 const network = this.getNetworkById(accessory.context.id);
                 if (network) {
                     try {
-                        await blink.setArmed(value, [accessory.context.id]);
+                        await this.blink.setArmed(value, [accessory.context.id]);
                         this.log(
                             `[${accessory.displayName}] ${
                                 value ? "arm" : "disarm"
                             }`
                         );
-                        await this.sleep(3000);
+                        await sleep(3000);
                         callback();
                     } catch (error) {
                         this.log(error);
@@ -252,17 +251,17 @@ class BlinkCameras {
                 const camera = this.getCameraById(accessory.context.id);
                 if (camera) {
                     try {
-                        blink.getLinks();
+                        this.blink.getLinks();
                         await camera.setMotionDetect(value);
                         this.log(
                             `[${accessory.displayName}] ${
                                 value ? "arm" : "disarm"
                             }`
                         );
-                        await this.sleep(3000);
+                        await sleep(3000);
                         // This triggers the blink system to refresh it's list of cameras
-                        await blink.setupSystem();
-                        await this.sleep(3000);
+                        await this.blink.setupSystem();
+                        await sleep(3000);
                         callback();
                     } catch (error) {
                         this.log(error);
@@ -294,20 +293,20 @@ class BlinkCameras {
 
     async discover() {
         this.log("Discovering Cameras");
-        const blink = this.getBlink();
         await this.lock.acquire("platform", async () => {
             this.log("Inside Lock");
 
             try {
-                await blink.setupSystem();
+                // @ts-ignore
+                await this.blink.setupSystem();
                 this.log("Setup Blink System");
 
                 // Updating cached accessories to set them reachable if they exist,and unregister them if they don't exist.
                 this.accessories = this.updateAccessories(this.accessories);
 
                 // Add networks as switches
-                if (blink.networks && blink.networks.length) {
-                    blink.networks.forEach((network) => {
+                if (this.blink.networks && this.blink.networks.length) {
+                    this.blink.networks.forEach((network) => {
                         const uuid = UUIDGen.generate(
                             `${platformName}-${this.config.name}-${network.id}`
                         );
@@ -316,8 +315,8 @@ class BlinkCameras {
                 }
 
                 // Add cameras as switches
-                if (blink.cameras) {
-                    Object.entries(blink.cameras).forEach(([, camera]) => {
+                if (this.blink.cameras) {
+                    Object.entries(this.blink.cameras).forEach(([, camera]) => {
                         const uuid = UUIDGen.generate(
                             `${platformName}-${this.config.name}-${camera.id}`
                         );
@@ -325,7 +324,7 @@ class BlinkCameras {
                     });
                 }
 
-                await this.sleep(1500);
+                await sleep(1500);
             } catch (error) {
                 this.log(error);
             }

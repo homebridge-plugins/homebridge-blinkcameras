@@ -1,10 +1,11 @@
 const plugin = require("../src/index");
-const Blink = require("node-blink-security");
-const AsyncLock = require("async-lock");
+jest.mock("../src/utils");
 jest.mock("node-blink-security");
 jest.mock("async-lock");
 
 const faker = require("faker");
+const moment = require("moment");
+const Blink = require("node-blink-security");
 
 let BlinkCameras;
 
@@ -125,23 +126,38 @@ const mockBlinkNetwork = id => {
 let platform;
 let bridge;
 
+
 beforeEach(() => {
     bridge = plugin(mockHomeBridge());
     platform = new BlinkCameras(mockLog, mockConfig, mockApi());
-    platform.sleep = jest.fn(() => {});
     platform.lock.acquire = jest.fn(async (id, callback) => {
         await callback("token");
     });
-    platform.getBlink();
     platform._blink.cameras = {};
     platform._blink.networks = {};
     platform.accessories = {};
 });
 
-describe("getBlink", () => {
-    it("should get a new instance of the Blink module", () => {
-        const blink = platform.getBlink();
-        expect(blink).toBeInstanceOf(Blink);
+
+describe("blink", () => {
+    it("should return a new blink instance", () => {
+        expect(platform.blink).toBeInstanceOf(Blink);
+    });
+});
+
+describe("authenticate", () => {
+    it("should authenticate when the nextAuthentication time is in the past", () => {
+        platform._nextAuthentication = moment().subtract(1, 'minute');
+        platform.authenticate();
+        expect(platform._blink.setupSystem.mock.calls.length).toBe(1);
+    });
+    it("should set nextAuthentication time to be 24 hours from now", () => {
+        const now = moment();
+        // Force authentication by setting it to the past
+        platform._nextAuthentication = now.clone().subtract(1, 'minute');
+        platform.authenticate();
+        expect(platform._nextAuthentication.isSame(now.add(24, 'hours'), 'hours'))
+            .toBe(true);
     });
 });
 
@@ -171,7 +187,6 @@ describe("discover", () => {
         expect(platform.updateAccessories.mock.calls.length).toBe(1);
         expect(platform.addNetwork.mock.calls.length).toBe(0);
         expect(platform.addCamera.mock.calls.length).toBe(1);
-        expect(platform.sleep.mock.calls.length).toBe(1);
     });
 
     it("should add networks", async () => {
@@ -183,7 +198,6 @@ describe("discover", () => {
         expect(platform.updateAccessories.mock.calls.length).toBe(1);
         expect(platform.addNetwork.mock.calls.length).toBe(1);
         expect(platform._blink.setupSystem.mock.calls.length).toBe(1);
-        expect(platform.sleep.mock.calls.length).toBe(1);
     });
 });
 
@@ -303,7 +317,7 @@ describe("getOn", () => {
     it("should call the callback when the accessory is a network", async () => {
         const uuid = faker.random.uuid();
         const id = faker.random.uuid();
-        accessory = mockNetworkAccessory(uuid, id);
+        const accessory = mockNetworkAccessory(uuid, id);
         const mockCallback = jest.fn(() => {});
         platform._blink.getSummary.mockImplementationOnce(async () => {
             return {
@@ -349,7 +363,6 @@ describe("setOn", () => {
         await platform.setOn(accessory, true, mockCallback);
         expect(platform._blink.setArmed.mock.calls.length).toBe(1);
         expect(mockCallback.mock.calls.length).toBe(1);
-        // expect(platform.sleep.mock.calls.length).toBe(1);
     });
 
     it("should call the callback when the accessory is camera", async () => {
@@ -369,7 +382,6 @@ describe("setOn", () => {
         expect(mockCamera.setMotionDetect.mock.calls.length).toBe(1);
         expect(mockCamera.setMotionDetect.mock.calls[0][0]).toBe("set");
         expect(mockCallback.mock.calls.length).toBe(1);
-        // expect(platform.sleep.mock.calls.length).toBe(1);
     });
 });
 

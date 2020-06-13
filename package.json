@@ -1,6 +1,6 @@
 {
     "name": "homebridge-blinkcameras",
-    "version": "1.0.10",
+    "version": "1.0.11",
     "description": "Blink Camera plugin for homebridge",
     "license": "ISC",
     "keywords": [
@@ -20,22 +20,26 @@
         "homebridge": ">=0.2.0"
     },
     "dependencies": {
-        "@babel/polyfill": "^7.8.7",
+        "@babel/polyfill": "^7.10.1",
         "@hapi/cryptiles": "^5.1.0",
+        "@types/jest": "^26.0.0",
         "async-lock": "^1.2.4",
         "lodash": ">=4.17.15",
+        "moment": "^2.26.0",
         "node-blink-security": "^4.1.4"
     },
     "devDependencies": {
-        "@babel/core": "^7.9.6",
-        "@babel/plugin-proposal-class-properties": "^7.8.3",
-        "@babel/preset-env": "^7.9.6",
-        "@babel/preset-typescript": "^7.9.0",
+        "@babel/core": "^7.10.2",
+        "@babel/plugin-proposal-class-properties": "^7.10.1",
+        "@babel/preset-env": "^7.10.2",
+        "@babel/preset-typescript": "^7.10.1",
+        "babel-eslint": "^10.1.0",
         "babel-jest": "^26.0.1",
+        "eslint": "^7.2.0",
         "faker": "^4.1.0",
         "jest": "^26.0.1",
         "prettier": "^2.0.5",
-        "rollup": "^2.10.9",
+        "rollup": "^2.16.0",
         "rollup-plugin-babel": "^4.4.0",
         "rollup-plugin-node-resolve": "^5.2.0"
     },
@@ -43,6 +47,7 @@
         "dev": "rollup -c -w",
         "build": "rollup -c",
         "test": "jest",
-        "prepublishOnly": "npm run build"
+        "prepublishOnly": "npm run build",
+        "lint": "eslint src/index.js"
     }
 }
