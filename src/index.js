@@ -3,7 +3,7 @@
 const Blink = require("node-blink-security");
 const AsyncLock = require("async-lock");
 const moment = require("moment");
-const { sleep } = require("./utils");
+const { sleep } = require("./utils.js");
 
 // Blink Security Platform Plugin for HomeBridge (https://github.com/nfarina/homebridge)
 //
@@ -15,7 +15,9 @@ const { sleep } = require("./utils");
 //         "username": "me@example.com",
 //         "password": "PASSWORD",
 //         "deviceId": "A made up device Id",
-//         "deviceName": "A made up device Name"
+//         "deviceName": "A made up device Name",
+//         "discovery": false,
+//         "discoveryInterval": 3600
 //     }
 // ]
 
@@ -24,7 +26,7 @@ const className = "BlinkCameras";
 
 let Accessory, Service, Characteristic, UUIDGen;
 
-module.exports = function (homebridge) {
+module.exports = function(homebridge) {
     Accessory = homebridge.platformAccessory;
     Service = homebridge.hap.Service;
     Characteristic = homebridge.hap.Characteristic;
@@ -45,14 +47,16 @@ class BlinkCameras {
             {
                 auth_2FA: false,
                 verification_timeout: 6000,
-                device_name: this.config.deviceName,
-            },
+                device_name: this.config.deviceName
+            }
         ];
-        this._blink = new Blink(this._blinkConfig);
-        this.authenticate();
         this._nextAuthentication = moment();
         this.discovery =
             this.config.discovery === undefined ? true : this.config.discovery;
+        this._discoveryInterval =
+            this.config.discoveryInterval === undefined
+                ? 3600000
+                : this.config.discoveryInterval * 1000;
         this.accessories = {};
         this.lock = new AsyncLock();
 
@@ -64,11 +68,11 @@ class BlinkCameras {
 
                 this.discover(); // intermittent discovery
 
-                // if (this.discovery === true) {
-                //     setInterval(() => {
-                //         this.discover();
-                //     }, 60000);
-                // }
+                if (this.discovery === true) {
+                    setInterval(() => {
+                        this.discover();
+                    }, this._discoveryInterval);
+                }
             });
         }
     }
@@ -77,8 +81,8 @@ class BlinkCameras {
         if (this._blink) {
             return this._blink;
         }
-        this._blink = new Blink(this._blinkConfig);
-        return this._blink
+        this._blink = new Blink(...this._blinkConfig);
+        return this._blink;
     }
 
     configureAccessory(accessory) {
@@ -90,14 +94,14 @@ class BlinkCameras {
     async authenticate() {
         if (moment().isAfter(this._nextAuthentication)) {
             try {
-                this._nextAuthentication = moment().add(24, 'hours');
+                this._nextAuthentication = moment().add(24, "hours");
                 this.log(
                     `Authenticating with Blink API as ${this.config.username}`
                 );
                 // @ts-ignore
                 await this.blink.setupSystem();
             } catch (e) {
-                this.log('Error authenticating with blink API', e);
+                this.log("Error authenticating with blink API", e);
             }
         }
     }
@@ -115,7 +119,7 @@ class BlinkCameras {
             this.updateAccessory(newAccessory);
             this.accessories[newAccessory.UUID] = newAccessory;
             this.api.registerPlatformAccessories(platformName, className, [
-                newAccessory,
+                newAccessory
             ]);
         }
     }
@@ -133,7 +137,7 @@ class BlinkCameras {
             this.updateAccessory(newAccessory);
             this.accessories[newAccessory.UUID] = newAccessory;
             this.api.registerPlatformAccessories(platformName, className, [
-                newAccessory,
+                newAccessory
             ]);
         }
     }
@@ -158,7 +162,7 @@ class BlinkCameras {
             : accessory.addService(Service.Switch);
         service
             .getCharacteristic(Characteristic.On)
-            .on("get", (callback) => {
+            .on("get", callback => {
                 this.getOn(accessory, callback);
             })
             .on("set", (newValue, callback, context) => {
@@ -180,9 +184,11 @@ class BlinkCameras {
     }
 
     getNetworkById(network_id) {
-        const found = Object.entries(this.blink.networks).find(([, network]) => {
-            return network.id === network_id;
-        });
+        const found = Object.entries(this.blink.networks).find(
+            ([, network]) => {
+                return network.id === network_id;
+            }
+        );
         if (found) {
             return found[1];
         }
@@ -236,7 +242,9 @@ class BlinkCameras {
                 const network = this.getNetworkById(accessory.context.id);
                 if (network) {
                     try {
-                        await this.blink.setArmed(value, [accessory.context.id]);
+                        await this.blink.setArmed(value, [
+                            accessory.context.id
+                        ]);
                         this.log(
                             `[${accessory.displayName}] ${
                                 value ? "arm" : "disarm"
@@ -245,7 +253,7 @@ class BlinkCameras {
                         await sleep(3000);
                         callback();
                     } catch (error) {
-                        this.log(error);
+                        this.log(error.message);
                     }
                 }
             });
@@ -262,12 +270,9 @@ class BlinkCameras {
                             }`
                         );
                         await sleep(3000);
-                        // This triggers the blink system to refresh it's list of cameras
-                        await this.authenticate();
-                        await sleep(3000);
                         callback();
                     } catch (error) {
-                        this.log(error);
+                        this.log(error.message);
                     }
                 }
             });
@@ -297,21 +302,18 @@ class BlinkCameras {
     async discover() {
         this.log("Discovering Cameras");
         await this.lock.acquire("platform", async () => {
-            this.log("Inside Lock");
-
             try {
                 await this.authenticate();
-                this.log("Setup Blink System");
-
                 // Updating cached accessories to set them reachable if they exist,and unregister them if they don't exist.
                 this.accessories = this.updateAccessories(this.accessories);
 
                 // Add networks as switches
                 if (this.blink.networks && this.blink.networks.length) {
-                    this.blink.networks.forEach((network) => {
+                    this.blink.networks.forEach(network => {
                         const uuid = UUIDGen.generate(
                             `${platformName}-${this.config.name}-${network.id}`
                         );
+                        this.log(`Found network ${network.name}`);
                         this.addNetwork(uuid, network);
                     });
                 }
@@ -322,6 +324,7 @@ class BlinkCameras {
                         const uuid = UUIDGen.generate(
                             `${platformName}-${this.config.name}-${camera.id}`
                         );
+                        this.log(`Found camera ${camera.name}`);
                         this.addCamera(uuid, camera);
                     });
                 }

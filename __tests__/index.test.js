@@ -133,8 +133,8 @@ beforeEach(() => {
     platform.lock.acquire = jest.fn(async (id, callback) => {
         await callback("token");
     });
-    platform._blink.cameras = {};
-    platform._blink.networks = {};
+    platform.blink.cameras = {};
+    platform.blink.networks = {};
     platform.accessories = {};
 });
 
@@ -173,7 +173,7 @@ describe("configureAccessory", () => {
 
 describe("discover", () => {
     it("should add cameras", async () => {
-        platform._blink.cameras = {
+        platform.blink.cameras = {
             "1": {
                 enabled: true
             }
@@ -183,21 +183,19 @@ describe("discover", () => {
         platform.addNetwork = jest.fn(() => {});
         await platform.discover();
         expect(platform.lock.acquire.mock.calls.length).toBe(1);
-        expect(platform._blink.setupSystem.mock.calls.length).toBe(1);
         expect(platform.updateAccessories.mock.calls.length).toBe(1);
         expect(platform.addNetwork.mock.calls.length).toBe(0);
         expect(platform.addCamera.mock.calls.length).toBe(1);
     });
 
     it("should add networks", async () => {
-        platform._blink.networks = [{}];
+        platform.blink.networks = [{}];
         platform.updateAccessories = jest.fn(() => {});
         platform.addNetwork = jest.fn(() => {});
         await platform.discover();
         expect(platform.lock.acquire.mock.calls.length).toBe(1);
         expect(platform.updateAccessories.mock.calls.length).toBe(1);
         expect(platform.addNetwork.mock.calls.length).toBe(1);
-        expect(platform._blink.setupSystem.mock.calls.length).toBe(1);
     });
 });
 
@@ -293,8 +291,8 @@ describe("getCameraById", () => {
         const id2 = faker.random.uuid();
         const camera1 = mockBlinkCamera(id);
         const camera2 = mockBlinkCamera(id2);
-        platform._blink.cameras[id] = camera1;
-        platform._blink.cameras[id2] = camera2;
+        platform.blink.cameras[id] = camera1;
+        platform.blink.cameras[id2] = camera2;
         const found = platform.getCameraById(id);
         expect(found).toBe(camera1);
     });
@@ -306,8 +304,8 @@ describe("getNetworkById", () => {
         const id2 = faker.random.uuid();
         const network1 = mockBlinkNetwork(id);
         const network2 = mockBlinkNetwork(id2);
-        platform._blink.networks[id] = network1;
-        platform._blink.networks[id2] = network2;
+        platform.blink.networks[id] = network1;
+        platform.blink.networks[id2] = network2;
         const found = platform.getNetworkById(id);
         expect(found).toBe(network1);
     });
@@ -319,7 +317,7 @@ describe("getOn", () => {
         const id = faker.random.uuid();
         const accessory = mockNetworkAccessory(uuid, id);
         const mockCallback = jest.fn(() => {});
-        platform._blink.getSummary.mockImplementationOnce(async () => {
+        platform.blink.getSummary.mockImplementationOnce(async () => {
             return {
                 [accessory.context.id]: {
                     network: {
@@ -338,14 +336,14 @@ describe("getOn", () => {
         const id = faker.random.uuid();
         const accessory = mockCameraAccessory(uuid, id);
         const mockCallback = jest.fn(() => {});
-        platform._blink.getCameras.mockImplementationOnce(async () => {
+        platform.blink.getCameras.mockImplementationOnce(async () => {
             return {
                 [accessory.context.id]: {
                     enabled: true
                 }
             };
         });
-        platform._blink.cameras[id] = mockBlinkCamera(id);
+        platform.blink.cameras[id] = mockBlinkCamera(id);
         await platform.getOn(accessory, mockCallback);
         expect(mockCallback.mock.calls.length).toBe(1);
         expect(mockCallback.mock.calls[0][0]).toBe(null);
@@ -358,10 +356,10 @@ describe("setOn", () => {
         const uuid = faker.random.uuid();
         const id = faker.random.uuid();
         const accessory = mockNetworkAccessory(uuid, id);
-        platform._blink.networks[id] = mockBlinkNetwork(id);
+        platform.blink.networks[id] = mockBlinkNetwork(id);
         const mockCallback = jest.fn(() => {});
         await platform.setOn(accessory, true, mockCallback);
-        expect(platform._blink.setArmed.mock.calls.length).toBe(1);
+        expect(platform.blink.setArmed.mock.calls.length).toBe(1);
         expect(mockCallback.mock.calls.length).toBe(1);
     });
 
@@ -371,14 +369,14 @@ describe("setOn", () => {
         const accessory = mockCameraAccessory(uuid, id);
         const mockCallback = jest.fn(() => {});
         const mockCamera = mockBlinkCamera(id);
-        platform._blink.getCameras.mockImplementation(() => {
+        platform.blink.getCameras.mockImplementation(() => {
             return {
                 MyCamera: mockCamera
             };
         });
-        platform._blink.cameras[id] = mockCamera;
+        platform.blink.cameras[id] = mockCamera;
         await platform.setOn(accessory, "set", mockCallback);
-        expect(platform._blink.getLinks.mock.calls.length).toBe(1);
+        expect(platform.blink.getLinks.mock.calls.length).toBe(1);
         expect(mockCamera.setMotionDetect.mock.calls.length).toBe(1);
         expect(mockCamera.setMotionDetect.mock.calls[0][0]).toBe("set");
         expect(mockCallback.mock.calls.length).toBe(1);
@@ -395,8 +393,8 @@ describe("updateAccessories", () => {
         const camera2 = mockBlinkCamera(uuid2);
         platform.accessories[uuid1] = accessory1;
         platform.accessories[uuid2] = accessory2;
-        platform._blink.cameras[uuid1] = camera1;
-        platform._blink.cameras[uuid2] = camera1;
+        platform.blink.cameras[uuid1] = camera1;
+        platform.blink.cameras[uuid2] = camera1;
         platform.updateAccessory = jest.fn();
         const accessories = platform.updateAccessories(platform.accessories);
         expect(accessories[uuid1].reachable).toBe(true);
@@ -411,7 +409,7 @@ describe("updateAccessories", () => {
         const camera2 = mockBlinkCamera(uuid2);
         platform.accessories[uuid1] = accessory1;
         platform.accessories[uuid2] = accessory2;
-        platform._blink.cameras[uuid1] = camera1;
+        platform.blink.cameras[uuid1] = camera1;
         const accessories = platform.updateAccessories(platform.accessories);
         expect(accessories[uuid1]).toBeDefined();
         expect(accessories[uuid2]).toBeUndefined();
