@@ -1,10 +1,9 @@
 language: node_js
 node_js:
-- stable
+- lts
 install:
 - npm install
 script:
-- npm run build
 - npm test
 deploy:
   edge: true
