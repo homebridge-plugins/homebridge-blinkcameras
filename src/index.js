@@ -49,6 +49,7 @@ class BlinkCameras {
             },
         ];
         this._blink = new Blink(this._blinkConfig);
+        this.authenticate();
         this._nextAuthentication = moment();
         this.discovery =
             this.config.discovery === undefined ? true : this.config.discovery;
@@ -188,6 +189,7 @@ class BlinkCameras {
     }
 
     async getOn(accessory, callback) {
+        await this.authenticate();
         if (accessory.context.isNetwork) {
             let summary;
             try {
@@ -227,6 +229,7 @@ class BlinkCameras {
     }
 
     async setOn(accessory, value, callback) {
+        await this.authenticate();
         const key = `${accessory.context.id}-set`;
         if (accessory.context.isNetwork) {
             await this.lock.acquire(key, async () => {
@@ -260,7 +263,7 @@ class BlinkCameras {
                         );
                         await sleep(3000);
                         // This triggers the blink system to refresh it's list of cameras
-                        await this.blink.setupSystem();
+                        await this.authenticate();
                         await sleep(3000);
                         callback();
                     } catch (error) {
@@ -297,8 +300,7 @@ class BlinkCameras {
             this.log("Inside Lock");
 
             try {
-                // @ts-ignore
-                await this.blink.setupSystem();
+                await this.authenticate();
                 this.log("Setup Blink System");
 
                 // Updating cached accessories to set them reachable if they exist,and unregister them if they don't exist.
