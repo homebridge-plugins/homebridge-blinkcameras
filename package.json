@@ -44,10 +44,7 @@
         "rollup-plugin-node-resolve": "^5.2.0"
     },
     "scripts": {
-        "dev": "rollup -c -w",
-        "build": "rollup -c",
         "test": "jest",
-        "prepublishOnly": "npm run build",
         "lint": "eslint src/index.js"
     }
 }
