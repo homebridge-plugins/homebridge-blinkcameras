@@ -81,8 +81,13 @@ class BlinkCameras {
         if (this._blink) {
             return this._blink;
         }
-        this._blink = new Blink(...this._blinkConfig);
-        return this._blink;
+        console.log("Making new blink client");
+        this.blink = new Blink(...this._blinkConfig);
+        return this.blink;
+    }
+
+    set blink(blinkClient) {
+        this._blink = blinkClient;
     }
 
     configureAccessory(accessory) {
@@ -98,6 +103,8 @@ class BlinkCameras {
                 this.log(
                     `Authenticating with Blink API as ${this.config.username}`
                 );
+                // Delete the old token manually to force re-authentication
+                this.blink._token = undefined;
                 // @ts-ignore
                 await this.blink.setupSystem();
             } catch (e) {
