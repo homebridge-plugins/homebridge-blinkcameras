@@ -1,6 +1,6 @@
 {
     "name": "homebridge-blinkcameras",
-    "version": "1.1.4",
+    "version": "1.1.5",
     "description": "Blink Camera plugin for homebridge",
     "license": "ISC",
     "keywords": [
@@ -26,7 +26,7 @@
         "async-lock": "^1.2.4",
         "lodash": ">=4.17.19",
         "moment": "^2.27.0",
-        "node-blink-security": "github:madshall/node-blink-security#master"
+        "node-blink-security": "^4.1.5"
     },
     "devDependencies": {
         "@babel/core": "^7.10.4",
