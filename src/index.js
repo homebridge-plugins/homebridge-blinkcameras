@@ -45,7 +45,7 @@ class BlinkCameras {
             this.config.password,
             this.config.deviceId,
             {
-                auth_2FA: false,
+                auth_2FA: true,
                 verification_timeout: 6000,
                 device_name: this.config.deviceName
             }
