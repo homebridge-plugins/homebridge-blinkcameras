@@ -22,29 +22,32 @@
     "dependencies": {
         "@babel/polyfill": "^7.10.4",
         "@hapi/cryptiles": "^5.1.0",
-        "@types/jest": "^26.0.4",
-        "async-lock": "^1.2.4",
-        "lodash": ">=4.17.19",
-        "moment": "^2.27.0",
+        "@types/jest": "^27.4.1",
+        "async-lock": "^1.3.1",
+        "lodash": ">=4.17.21",
+        "moment": "^2.29.1",
         "node-blink-security": "^4.1.5"
     },
     "devDependencies": {
-        "@babel/core": "^7.10.4",
-        "@babel/plugin-proposal-class-properties": "^7.10.4",
-        "@babel/preset-env": "^7.10.4",
-        "@babel/preset-typescript": "^7.10.4",
+        "@babel/core": "^7.17.5",
+        "@babel/plugin-proposal-class-properties": "^7.16.7",
+        "@babel/preset-env": "^7.16.11",
+        "@babel/preset-typescript": "^7.16.7",
         "babel-eslint": "^10.1.0",
-        "babel-jest": "^26.1.0",
-        "eslint": "^7.4.0",
-        "faker": "^4.1.0",
-        "jest": "^26.1.0",
-        "prettier": "^2.0.5",
-        "rollup": "^2.21.0",
+        "babel-jest": "^27.5.1",
+        "eslint": "^8.10.0",
+        "faker": "^6.6.6",
+        "jest": "^27.5.1",
+        "prettier": "^2.5.1",
+        "rollup": "^2.70.0",
         "rollup-plugin-babel": "^4.4.0",
-        "rollup-plugin-node-resolve": "^5.2.0"
+        "rollup-plugin-node-resolve": "^5.2.0",
+        "npm-check-updates": "^12.5.2"
     },
     "scripts": {
         "test": "jest",
-        "lint": "eslint src/index.js"
+        "lint": "eslint src/index.js",
+        "check": "npm install && npm outdated",
+        "update": "ncu -u && npm update && npm install"
     }
 }
